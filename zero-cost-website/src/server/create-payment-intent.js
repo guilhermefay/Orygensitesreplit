@@ -31,6 +31,64 @@ export function setupCreatePaymentIntent(app) {
       stripeKeyConfigured: !!process.env.STRIPE_SECRET_KEY
     });
   });
+  
+  // Rota simples de redirecionamento para checkout que usa query parameters
+  // Isso evita problemas com fetch API ou erros de JavaScript
+  app.get('/api/checkout-redirect', async (req, res) => {
+    try {
+      // Extrair parâmetros da URL
+      const { amount, currency = 'brl', plan, formId } = req.query;
+      
+      // Validar os parâmetros
+      if (!amount || !plan) {
+        return res.status(400).send('Parâmetros amount e plan são obrigatórios');
+      }
+      
+      // Criar descrição do produto com base no plano
+      const description = plan === 'annual' 
+        ? 'Plano Anual - Zero Cost Website' 
+        : 'Plano Mensal - Zero Cost Website';
+      
+      // Construir a URL de retorno após pagamento
+      const host = req.headers.host || 'localhost:5000';
+      const protocol = req.headers['x-forwarded-proto'] || 'http';
+      const successUrl = `${protocol}://${host}?success=true&plan=${plan}`;
+      const cancelUrl = `${protocol}://${host}?success=false`;
+      
+      console.log('Criando Checkout Session para redirecionamento direto');
+      
+      // Criar uma sessão de checkout do Stripe
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency: currency.toLowerCase(),
+            product_data: {
+              name: description,
+            },
+            unit_amount: Number(amount),
+          },
+          quantity: 1,
+        }],
+        mode: 'payment',
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        metadata: {
+          plan,
+          formId: formId || 'unknown',
+          source: 'checkout-redirect'
+        },
+      });
+      
+      console.log('Sessão criada com sucesso, redirecionando para:', session.url);
+      
+      // Redirecionar o usuário para a página de checkout do Stripe
+      res.redirect(303, session.url);
+    } catch (error) {
+      console.error('Erro ao criar sessão de checkout:', error);
+      res.status(500).send(`Erro ao processar pagamento: ${error.message}`);
+    }
+  });
 
   // Configurar rota para criar PaymentIntent
   app.post('/api/create-payment-intent', async (req, res) => {
