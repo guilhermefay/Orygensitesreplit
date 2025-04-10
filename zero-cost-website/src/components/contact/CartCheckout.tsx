@@ -1,0 +1,143 @@
+
+import React, { useState } from "react";
+import OrderSummary from "./cart/OrderSummary";
+import PlanBenefits from "./cart/PlanBenefits";
+import PeriodSelector from "./cart/PeriodSelector";
+import PriceDisplay from "./cart/PriceDisplay";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { ContactFormData, FileData } from "./types";
+import StripePaymentButton from "./cart/StripePaymentButton";
+import PayPalCheckout from "./PayPalCheckout";
+import { PricingConfiguration } from "@/lib/config/pricing";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+interface CartCheckoutProps {
+  formData: ContactFormData;
+  onPaymentSuccess: (paymentId: string) => void;
+  onBack: (e: React.MouseEvent) => void;
+  pricingConfig?: PricingConfiguration;
+  isStripePayment?: boolean;
+  formId: string;
+  files: FileData;
+  colorPalette: string[];
+  finalContent: string;
+}
+
+const CartCheckout: React.FC<CartCheckoutProps> = ({
+  formData,
+  onPaymentSuccess,
+  onBack,
+  pricingConfig,
+  isStripePayment = false,
+  formId,
+  files,
+  colorPalette,
+  finalContent
+}) => {
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "annual">(
+    formData.selectedPlan as "monthly" | "annual"
+  );
+  const { language } = useLanguage();
+
+  // Default pricing config if none provided
+  const effectivePricingConfig = pricingConfig || {
+    monthly: 89.9,
+    annual: 599.0,
+    monthlyInAnnual: 49.9,
+    currency: "BRL",
+    currencySymbol: "R$",
+    discount: 44,
+    marketPrice: 530.65,
+    savings: 480.75,
+    savingsPercentage: 91,
+  };
+
+  // Calculate the price based on the selected plan
+  const price = {
+    plan: selectedPlan,
+    monthly: effectivePricingConfig.monthly,
+    annual: effectivePricingConfig.annual,
+    monthlyInAnnual: effectivePricingConfig.monthlyInAnnual,
+    totalPrice:
+      selectedPlan === "monthly"
+        ? effectivePricingConfig.monthly
+        : effectivePricingConfig.annual,
+    currency: effectivePricingConfig.currency,
+  };
+  
+  console.log("Preço do plano:", price);
+  console.log("Form ID for payment:", formId);
+
+  return (
+    <div className="w-full max-w-4xl mx-auto">
+      <Button
+        onClick={onBack}
+        variant="ghost"
+        className="mb-6 hover:bg-gray-100"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        {language === 'en' ? 'Back' : 'Voltar'}
+      </Button>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Left Column - Order Summary & Benefits */}
+        <div>
+          <OrderSummary business={formData.business} />
+          <div className="mt-6">
+            <PlanBenefits currentPlan={selectedPlan} />
+          </div>
+        </div>
+
+        {/* Right Column - Pricing & Payment */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <h3 className="text-xl font-semibold mb-4">
+            {language === 'en' ? 'Payment Details' : 'Detalhes do Pagamento'}
+          </h3>
+
+          {/* Period Selector */}
+          <PeriodSelector
+            selectedPlan={selectedPlan}
+            onChange={setSelectedPlan}
+            pricingConfig={effectivePricingConfig}
+          />
+
+          {/* Price Display */}
+          <div className="mt-6">
+            <PriceDisplay
+              selectedPlan={selectedPlan}
+              pricingConfig={effectivePricingConfig}
+            />
+          </div>
+
+          {/* Payment Buttons */}
+          <div className="mt-8 space-y-4">
+            {isStripePayment ? (
+              <StripePaymentButton
+                amount={price.totalPrice}
+                plan={selectedPlan}
+                currency={price.currency}
+                formId={formId}
+                onSuccess={onPaymentSuccess}
+                className="bg-[#6772E5] hover:bg-[#5469D4] text-white"
+              />
+            ) : (
+              <PayPalCheckout
+                selectedPlan={selectedPlan}
+                onBack={onBack}
+                onSuccess={onPaymentSuccess}
+                formData={formData}
+                files={files}
+                colorPalette={colorPalette}
+                finalContent={finalContent}
+                pricingConfig={effectivePricingConfig}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CartCheckout;
