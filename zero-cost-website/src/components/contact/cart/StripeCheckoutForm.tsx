@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   PaymentElement,
   useStripe,
@@ -22,7 +22,16 @@ const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
-  const { language, translate } = useLanguage();
+  const [isReady, setIsReady] = useState(false);
+  const { language } = useLanguage();
+  
+  // Verificar quando o Stripe e Elements estão prontos
+  useEffect(() => {
+    if (stripe && elements) {
+      setIsReady(true);
+      console.log('Stripe e Elements estão prontos para uso');
+    }
+  }, [stripe, elements]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -97,29 +106,49 @@ const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
     }
   };
 
+  // Mostrar mensagem de carregamento enquanto o Stripe não está pronto
+  if (!isReady) {
+    return (
+      <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
+        <div className="flex items-center justify-center flex-col space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <p className="text-gray-700">
+            {language === 'en' 
+              ? 'Loading payment form...' 
+              : 'Carregando formulário de pagamento...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Renderizar o formulário quando estiver pronto
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-md mx-auto">
-      <PaymentElement 
-        options={{
-          layout: 'tabs',
-          defaultValues: {
-            billingDetails: {
-              name: '',
-              email: '',
-              phone: '',
-              address: {
-                country: 'BR',
+    <form onSubmit={handleSubmit} className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
+      {/* Formulário de pagamento do Stripe */}
+      <div className="mb-6">
+        <PaymentElement 
+          options={{
+            layout: 'tabs',
+            defaultValues: {
+              billingDetails: {
+                name: '',
+                email: '',
+                phone: '',
+                address: {
+                  country: 'BR',
+                },
               },
             },
-          },
-        }}
-        className="mb-4" 
-      />
+          }}
+        />
+      </div>
       
+      {/* Botão de pagamento */}
       <button
         type="submit"
         disabled={!stripe || isProcessing}
-        className="w-full py-3 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm mt-4 transition-all flex items-center justify-center"
+        className="w-full py-3 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm transition-all flex items-center justify-center"
       >
         {isProcessing ? (
           <>
@@ -131,6 +160,7 @@ const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
         )}
       </button>
       
+      {/* Texto de segurança */}
       <p className="text-sm text-gray-500 mt-4 text-center">
         {language === 'en' 
           ? 'Your payment information is processed securely.' 

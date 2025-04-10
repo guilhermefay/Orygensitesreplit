@@ -14,7 +14,20 @@ interface StripeElementsProviderProps {
 }
 
 // Carregando o Stripe fora do componente para evitar recarregar
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+// Verificando se a chave pública existe e exibindo um erro se não existir
+const STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+
+if (!STRIPE_PUBLIC_KEY) {
+  console.error('Chave pública do Stripe não encontrada! Verifique a variável de ambiente VITE_STRIPE_PUBLIC_KEY');
+}
+
+// Inicialização segura do Stripe
+let stripePromise;
+try {
+  stripePromise = loadStripe(STRIPE_PUBLIC_KEY || '');
+} catch (error) {
+  console.error('Erro ao carregar o Stripe:', error);
+}
 
 const StripeElementsProvider: React.FC<StripeElementsProviderProps> = ({ 
   amount, 
@@ -143,14 +156,46 @@ const StripeElementsProvider: React.FC<StripeElementsProviderProps> = ({
     );
   }
 
+  // Verificar se o stripePromise foi inicializado corretamente
+  if (!stripePromise) {
+    return (
+      <div className="p-4 bg-red-50 text-red-700 rounded-md">
+        <p className="font-medium">
+          {language === 'en' ? 'Configuration Error' : 'Erro de Configuração'}:
+        </p>
+        <p>
+          {language === 'en' 
+            ? 'Payment system is not properly configured. Please contact support.' 
+            : 'Sistema de pagamento não está configurado corretamente. Por favor, entre em contato com o suporte.'}
+        </p>
+      </div>
+    );
+  }
+
+  // Renderizar o componente Elements do Stripe
   return (
-    <Elements stripe={stripePromise} options={{ clientSecret }}>
-      <StripeCheckoutForm 
-        onSuccess={onSuccess}
-        plan={plan}
-        formId={formId}
-      />
-    </Elements>
+    <div className="w-full rounded-lg overflow-hidden">
+      <Elements stripe={stripePromise} options={{ 
+        clientSecret,
+        appearance: {
+          theme: 'stripe',
+          variables: {
+            colorPrimary: '#0369a1', // Cor primária azul
+            colorBackground: '#ffffff',
+            colorText: '#1f2937',
+            colorDanger: '#ef4444',
+            fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, sans-serif',
+            borderRadius: '8px',
+          }
+        } 
+      }}>
+        <StripeCheckoutForm 
+          onSuccess={onSuccess}
+          plan={plan}
+          formId={formId}
+        />
+      </Elements>
+    </div>
   );
 };
 
