@@ -38,13 +38,19 @@ const StripeElementsProvider: React.FC<StripeElementsProviderProps> = ({
         const amountInCents = Math.round(amount * 100);
         console.log('Valor calculado em centavos:', amountInCents);
         
-        // Criar a PaymentIntent - tentando várias abordagens para garantir conectividade
-        const network = window.location.hostname === 'localhost' 
-          ? 'localhost' 
-          : window.location.hostname;
-          
-        // No Replit, precisamos usar o mesmo hostname mas porta diferente
-        const apiUrl = `http://${network}:5001/api/create-payment-intent`;
+        // Criar a PaymentIntent
+        // Em nossa configuração unificada, a API está no mesmo servidor que a aplicação
+        
+        // Usar o origin atual para criar a URL da API
+        const apiUrl = `${window.location.origin}/api/create-payment-intent`;
+        
+        // Log completo da URL que estamos usando para depuração
+        console.log('Configuração atual:');
+        
+        // Logs para depuração
+        console.log('Hostname atual:', window.location.hostname);
+        console.log('Porta atual:', window.location.port);
+        console.log('Origin completo:', window.location.origin);
         console.log('Usando API URL:', apiUrl);
         
         console.log('Enviando requisição para criar PaymentIntent com dados:', { 

@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import cors from 'cors';
+import fs from 'fs';
 import { setupCreatePaymentIntent } from './src/server/create-payment-intent.js';
 
 // Configurar __dirname para ES modules
@@ -33,19 +34,43 @@ app.use(express.json());
 // Configurar o endpoint de pagamento do Stripe
 setupCreatePaymentIntent(app);
 
-// Configurar porta para o servidor da API diferente do servidor de desenvolvimento
-const API_PORT = process.env.API_PORT || 5001;
+// Definir a porta para o servidor
+const PORT = process.env.PORT || 5000;
 
-// Apenas configurar as rotas necessárias para a API
-// Não precisamos servir arquivos estáticos no servidor de API
+// Configurar o servidor para servir os arquivos estáticos da aplicação Vite
+// O diretório dist contém a build da aplicação gerada pelo Vite
+const distPath = path.join(__dirname, 'dist');
+
+// Verificar se o diretório dist existe, se não, vamos servir via proxy
+if (fs.existsSync(distPath)) {
+  console.log('Configurando servidor para servir arquivos estáticos em:', distPath);
+  // Configurar middleware para servir arquivos estáticos
+  app.use(express.static(distPath));
+  
+  // Rota para servir o arquivo index.html para todas as rotas não-API
+  // Esta abordagem é mais simples e evita problemas com o path-to-regexp
+  app.use((req, res, next) => {
+    // Verificar se a URL começa com /api
+    if (req.url.startsWith('/api')) {
+      // Passar para o próximo middleware se for uma rota de API
+      return next();
+    }
+    
+    // Para qualquer outra URL, servir o index.html (para SPA - Single Page Application)
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
 
 // Criar o servidor HTTP
 const server = createServer(app);
 
-// Usar a porta da API que definimos acima
+// Usar a porta que definimos acima
 // Iniciar o servidor em 0.0.0.0 para permitir acesso de qualquer IP
-server.listen(API_PORT, '0.0.0.0', () => {
-  console.log(`Servidor Express rodando na porta ${API_PORT}`);
-  console.log(`API disponível em http://localhost:${API_PORT}/api`);
-  console.log(`API disponível remotamente em http://0.0.0.0:${API_PORT}/api`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor Express rodando na porta ${PORT}`);
+  console.log(`API disponível em http://localhost:${PORT}/api`);
+  if (fs.existsSync(distPath)) {
+    console.log(`Aplicação web disponível em http://localhost:${PORT}`);
+  }
+  console.log(`Servidor acessível remotamente em http://0.0.0.0:${PORT}`);
 });

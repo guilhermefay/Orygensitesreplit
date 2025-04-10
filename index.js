@@ -30,35 +30,19 @@ async function main() {
     console.log('Installing Express server dependencies...');
     await runCommand('npm install express cors stripe', repoPath);
 
-    // Start the Express API server
-    console.log('Starting the Express API server...');
-    
-    // Não é necessário copiar, já criamos o arquivo diretamente
-    // no diretório correto usando o editor de strings
-    
-    // Execute o servidor no diretório correto
-    const apiServerProcess = exec('node server.js', { 
-      cwd: repoPath
-    });
+    // Construa a aplicação para produção
+    console.log('Building the React application...');
+    try {
+      await runCommand('npm run build', repoPath);
+      console.log('Build completed successfully');
+    } catch (error) {
+      console.error('Error during build:', error);
+      console.log('Continuing with development server...');
+    }
 
-    // Forward stdout and stderr to console for API server
-    apiServerProcess.stdout.on('data', (data) => {
-      console.log(`[API] ${data}`);
-    });
-
-    apiServerProcess.stderr.on('data', (data) => {
-      console.error(`[API] ${data}`);
-    });
-
-    // Handle API server process exit
-    apiServerProcess.on('exit', (code) => {
-      console.log(`API server exited with code ${code}`);
-    });
-
-    // Start the development server
-    console.log('Starting the development server...');
-    // Use exec instead of runCommand to keep the process running
-    const serverProcess = exec('npm run dev -- --host 0.0.0.0 --port 5000', { 
+    // Inicie o servidor Express (que também serve os arquivos estáticos)
+    console.log('Starting the Express server...');
+    const serverProcess = exec('PORT=5000 node server.js', { 
       cwd: repoPath 
     });
 
