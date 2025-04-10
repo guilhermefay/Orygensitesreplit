@@ -16,8 +16,32 @@ export function setupCreatePaymentIntent(app) {
     console.log(`[Stripe API] ${message}`, data || '');
   };
 
+  // Rota de teste para verificar se o Stripe está funcionando
+  app.get('/api/stripe-test', (req, res) => {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(500).json({ 
+        status: 'error',
+        message: 'STRIPE_SECRET_KEY não está configurada no ambiente'
+      });
+    }
+    
+    res.json({ 
+      status: 'ok', 
+      message: 'Conexão com Stripe configurada', 
+      stripeKeyConfigured: !!process.env.STRIPE_SECRET_KEY
+    });
+  });
+
   // Configurar rota para criar PaymentIntent
   app.post('/api/create-payment-intent', async (req, res) => {
+    // Verificar se o Stripe está configurado
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(500).json({ 
+        message: 'STRIPE_SECRET_KEY não está configurada no ambiente',
+        code: 'stripe_key_missing'
+      });
+    }
+    
     try {
       const { amount, currency = 'brl', plan, formId, redirect = false } = req.body;
 

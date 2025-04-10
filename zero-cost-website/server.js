@@ -6,6 +6,18 @@ import cors from 'cors';
 import fs from 'fs';
 import { setupCreatePaymentIntent } from './src/server/create-payment-intent.js';
 
+// Configurar variáveis de ambiente para Stripe
+const REQUIRED_ENV_VARS = ['STRIPE_SECRET_KEY'];
+
+// Verificar variáveis de ambiente necessárias
+REQUIRED_ENV_VARS.forEach(envVar => {
+  if (!process.env[envVar]) {
+    console.warn(`⚠️ Variável de ambiente ${envVar} não configurada. Algumas funcionalidades podem não funcionar corretamente.`);
+  } else {
+    console.log(`✓ Variável de ambiente ${envVar} configurada`);
+  }
+});
+
 // Configurar __dirname para ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

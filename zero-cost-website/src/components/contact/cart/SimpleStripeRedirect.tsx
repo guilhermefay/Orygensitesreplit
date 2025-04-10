@@ -26,6 +26,14 @@ const SimpleStripeRedirect: React.FC<SimpleStripeRedirectProps> = ({
     setIsLoading(true);
     
     try {
+      // Primeiro, verificar se o Stripe está configurado
+      const testResponse = await fetch(`${window.location.origin}/api/stripe-test`);
+      const testData = await testResponse.json();
+      
+      if (testResponse.status !== 200 || testData.status !== 'ok') {
+        throw new Error(testData.message || 'Erro de configuração do Stripe no servidor');
+      }
+      
       // Calcular o valor em centavos
       const amountInCents = Math.round(amount * 100);
       console.log('Valor calculado em centavos:', amountInCents);
