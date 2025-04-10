@@ -1,10 +1,39 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
 
 // Criar cliente Supabase com as credenciais de ambiente
 const supabaseUrl = process.env.SUPABASE_URL || 'https://eyzywpxlcyjnwbbxjwwg.supabase.co';
 const supabaseKey = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5enl3cHhsY3lqbndpYnhqd3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTIyODU3NzMsImV4cCI6MjAyNzg2MTc3M30.7RcDyuDgQQzTx8X3sSOTzQKRcg9Dp2S3sLVYEW79X0I';
-const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+// Log das informações para depuração
+console.log('[SUPABASE CONFIG] URL:', supabaseUrl);
+console.log('[SUPABASE CONFIG] Key length:', supabaseKey ? supabaseKey.length : 0);
+
+// Alternativa de salvamento local para emergências
+function saveLocalBackup(data) {
+  try {
+    const backupDir = './payment-backups';
+    if (!fs.existsSync(backupDir)) {
+      fs.mkdirSync(backupDir, { recursive: true });
+    }
+    const filename = `${backupDir}/payment-${data.id}-${Date.now()}.json`;
+    fs.writeFileSync(filename, JSON.stringify(data, null, 2));
+    console.log(`[BACKUP] Dados salvos localmente em ${filename}`);
+    return true;
+  } catch (error) {
+    console.error('[BACKUP] Erro ao salvar backup local:', error);
+    return false;
+  }
+}
+
+let supabaseClient;
+try {
+  supabaseClient = createClient(supabaseUrl, supabaseKey);
+  console.log('[SUPABASE CONFIG] Cliente criado com sucesso');
+} catch (error) {
+  console.error('[SUPABASE CONFIG] Erro ao criar cliente Supabase:', error);
+}
 
 /**
  * Configurar a rota de redirecionamento para o Stripe Checkout
@@ -277,15 +306,25 @@ export function setupStripeRedirect(app) {
             
             console.log('[PAYMENT SUCCESS] Dados a serem enviados para o Supabase:', submissionData);
             
-            // Inserir no Supabase
-            const { data, error } = await supabaseClient
-              .from('form_submissions')
-              .upsert(submissionData, { onConflict: 'id' });
-              
-            if (error) {
-              console.error('[PAYMENT SUCCESS] Erro ao salvar no Supabase:', error);
-            } else {
-              console.log('[PAYMENT SUCCESS] Dados salvos com sucesso no Supabase:', data);
+            // Tentar inserir no Supabase
+            let supabaseSuccess = false;
+            try {
+              const { data, error } = await supabaseClient
+                .from('form_submissions')
+                .upsert(submissionData, { onConflict: 'id' });
+                
+              if (error) {
+                console.error('[PAYMENT SUCCESS] Erro ao salvar no Supabase:', error);
+                // Se falhar, salvar um backup local
+                saveLocalBackup(submissionData);
+              } else {
+                console.log('[PAYMENT SUCCESS] Dados salvos com sucesso no Supabase:', data);
+                supabaseSuccess = true;
+              }
+            } catch (supabaseError) {
+              console.error('[PAYMENT SUCCESS] Exceção ao salvar no Supabase:', supabaseError);
+              // Em caso de exceção, salvar um backup local
+              saveLocalBackup(submissionData);
             }
           } catch (dbError) {
             console.error('[PAYMENT SUCCESS] Erro ao processar dados para o Supabase:', dbError);
@@ -314,14 +353,22 @@ export function setupStripeRedirect(app) {
               email: 'pagamento@semformulario.com'
             };
             
-            const { error } = await supabaseClient
-              .from('form_submissions')
-              .upsert(minimalData, { onConflict: 'id' });
-              
-            if (error) {
-              console.error('[PAYMENT SUCCESS] Erro ao salvar pagamento mínimo no Supabase:', error);
-            } else {
-              console.log('[PAYMENT SUCCESS] Registro mínimo de pagamento salvo no Supabase');
+            try {
+              const { error } = await supabaseClient
+                .from('form_submissions')
+                .upsert(minimalData, { onConflict: 'id' });
+                
+              if (error) {
+                console.error('[PAYMENT SUCCESS] Erro ao salvar pagamento mínimo no Supabase:', error);
+                // Salvar localmente em caso de erro
+                saveLocalBackup(minimalData);
+              } else {
+                console.log('[PAYMENT SUCCESS] Registro mínimo de pagamento salvo no Supabase');
+              }
+            } catch (supabaseError) {
+              console.error('[PAYMENT SUCCESS] Exceção ao salvar dados mínimos no Supabase:', supabaseError);
+              // Salvar backup em caso de exceção
+              saveLocalBackup(minimalData);
             }
           } catch (minError) {
             console.error('[PAYMENT SUCCESS] Erro ao salvar registro mínimo:', minError);
