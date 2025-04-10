@@ -1,6 +1,6 @@
-import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
-import fs from 'fs';
+const Stripe = require('stripe');
+const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs');
 
 // Criar cliente Supabase com as credenciais de ambiente
 const supabaseUrl = process.env.SUPABASE_URL || 'https://eyzywpxlcyjnwbbxjwwg.supabase.co';
@@ -40,7 +40,7 @@ try {
  * Esta é uma abordagem simplificada que evita qualquer problema com JavaScript no cliente
  * @param {Express} app - Express app instance
  */
-export function setupStripeRedirect(app) {
+function setupStripeRedirect(app) {
   // Verificar se a chave do Stripe está disponível
   if (!process.env.STRIPE_SECRET_KEY) {
     console.error('STRIPE_SECRET_KEY não está configurada no ambiente');
@@ -387,3 +387,7 @@ export function setupStripeRedirect(app) {
     }
   });
 }
+
+module.exports = {
+  setupStripeRedirect
+};

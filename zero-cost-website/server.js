@@ -18,9 +18,8 @@ REQUIRED_ENV_VARS.forEach(envVar => {
   }
 });
 
-// Configurar __dirname para ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Em CommonJS, __dirname já está disponível
+// Não precisamos definir __filename e __dirname manualmente
 
 // Cria uma aplicação Express
 const app = express();

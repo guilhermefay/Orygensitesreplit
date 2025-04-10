@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "buildCommand": "cd zero-cost-website && npm install && npm run build",
+  "installCommand": "cd zero-cost-website && npm install",
+  "outputDirectory": "zero-cost-website/dist",
+  "builds": [
+    {
+      "src": "zero-cost-website/api/*.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "zero-cost-website/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist",
+        "buildCommand": "npm run build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/checkout/store-form-data",
+      "dest": "/zero-cost-website/api/store-form-data.js"
+    },
+    {
+      "src": "/api/checkout/direct",
+      "dest": "/zero-cost-website/api/checkout-direct.js"
+    },
+    {
+      "src": "/api/checkout/redirect",
+      "dest": "/zero-cost-website/api/checkout-redirect.js"
+    },
+    {
+      "src": "/api/checkout/success",
+      "dest": "/zero-cost-website/api/process-payment-success.js"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/zero-cost-website/api/$1.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/zero-cost-website/dist/$1"
+    }
+  ],
+  "env": {
+    "STRIPE_SECRET_KEY": "@stripe_secret_key",
+    "VITE_STRIPE_PUBLIC_KEY": "@vite_stripe_public_key",
+    "SUPABASE_URL": "@supabase_url",
+    "SUPABASE_KEY": "@supabase_key"
+  }
+}

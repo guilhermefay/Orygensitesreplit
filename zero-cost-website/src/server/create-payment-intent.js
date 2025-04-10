@@ -1,7 +1,7 @@
-import Stripe from 'stripe';
+const Stripe = require('stripe');
 
 // Função para configurar a rota de create-payment-intent
-export function setupCreatePaymentIntent(app) {
+function setupCreatePaymentIntent(app) {
   // Verificar se a chave do Stripe está disponível
   if (!process.env.STRIPE_SECRET_KEY) {
     console.error('STRIPE_SECRET_KEY não está configurada no ambiente');
@@ -225,3 +225,7 @@ export function setupCreatePaymentIntent(app) {
 
   console.log('✅ Rota /api/create-payment-intent configurada');
 }
+
+module.exports = {
+  setupCreatePaymentIntent
+};
