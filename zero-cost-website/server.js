@@ -13,7 +13,12 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // Configurar CORS para permitir solicitações do frontend
-app.use(cors());
+// Configuração mais permissiva para ambiente de desenvolvimento
+app.use(cors({
+  origin: '*', // Permite solicitações de qualquer origem
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Configurar middlewares
 app.use(express.json());
@@ -31,8 +36,9 @@ const API_PORT = process.env.API_PORT || 5001;
 const server = createServer(app);
 
 // Usar a porta da API que definimos acima
-// Iniciar o servidor
-server.listen(API_PORT, () => {
+// Iniciar o servidor em 0.0.0.0 para permitir acesso de qualquer IP
+server.listen(API_PORT, '0.0.0.0', () => {
   console.log(`Servidor Express rodando na porta ${API_PORT}`);
   console.log(`API disponível em http://localhost:${API_PORT}/api`);
+  console.log(`API disponível remotamente em http://0.0.0.0:${API_PORT}/api`);
 });

@@ -37,7 +37,12 @@ const StripeElementsProvider: React.FC<StripeElementsProviderProps> = ({
         const amountInCents = Math.round(amount * 100);
         
         // Criar a PaymentIntent - apontando para o servidor Express
-        const response = await fetch('http://localhost:5001/api/create-payment-intent', {
+        // Use a URL relativa para que funcione tanto em desenvolvimento quanto em produção
+        const apiUrl = window.location.hostname === 'localhost' 
+          ? 'http://localhost:5001/api/create-payment-intent'
+          : '/api/create-payment-intent';
+          
+        const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
