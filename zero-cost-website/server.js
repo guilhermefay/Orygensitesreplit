@@ -84,12 +84,23 @@ if (fs.existsSync(distPath)) {
   // Rota para servir o arquivo index.html para todas as rotas não-API
   // Esta abordagem é mais simples e evita problemas com o path-to-regexp
   app.use((req, res, next) => {
+    console.log(`[SERVER] Handling request for: ${req.url}`);
+    
     // Verificar se a URL começa com /api
     if (req.url.startsWith('/api')) {
       // Passar para o próximo middleware se for uma rota de API
+      console.log(`[SERVER] API route detected: ${req.url}`);
       return next();
     }
     
+    // Verificar se a URL corresponde a um arquivo estático
+    const potentialFilePath = path.join(distPath, req.url);
+    if (fs.existsSync(potentialFilePath) && fs.statSync(potentialFilePath).isFile()) {
+      console.log(`[SERVER] Static file found: ${req.url}`);
+      return next();
+    }
+    
+    console.log(`[SERVER] SPA route, serving index.html for: ${req.url}`);
     // Para qualquer outra URL, servir o index.html (para SPA - Single Page Application)
     res.sendFile(path.join(distPath, 'index.html'));
   });
