@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface SimpleStripeRedirectProps {
   amount: number;
@@ -21,6 +22,7 @@ const SimpleStripeRedirect: React.FC<SimpleStripeRedirectProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { language } = useLanguage();
+  const { toast } = useToast();
 
   const handlePayment = async () => {
     setIsLoading(true);
@@ -28,7 +30,10 @@ const SimpleStripeRedirect: React.FC<SimpleStripeRedirectProps> = ({
     try {
       // Mostrar mensagem de carregamento em português ou inglês
       const loadingMessage = language === 'en' ? 'Processing payment...' : 'Processando pagamento...';
-      toast.loading(loadingMessage, { id: 'payment-processing' });
+      toast({
+        title: loadingMessage,
+        description: language === 'en' ? 'Please wait...' : 'Por favor, aguarde...',
+      });
       
       try {
         // Primeiro, verificar se o Stripe está configurado
@@ -81,16 +86,17 @@ const SimpleStripeRedirect: React.FC<SimpleStripeRedirectProps> = ({
       });
       
       if (!response.ok) {
-        toast.dismiss('payment-processing');
         const errorData = await response.json();
+        toast({
+          title: language === 'en' ? 'Payment Error' : 'Erro no Pagamento',
+          description: errorData.message || language === 'en' ? 'Failed to create payment session' : 'Falha ao criar sessão de pagamento',
+          variant: "destructive",
+        });
         throw new Error(errorData.message || 'Erro ao criar sessão de pagamento');
       }
       
       const data = await response.json();
       console.log('Resposta do servidor:', data);
-      
-      // Remover todas as mensagens de toast
-      toast.dismiss();
       
       // Verificar se recebemos uma URL para redirecionamento (preferido)
       if (data.redirectUrl) {
@@ -112,11 +118,14 @@ const SimpleStripeRedirect: React.FC<SimpleStripeRedirectProps> = ({
       throw new Error('Resposta inválida do servidor, não contém redirectUrl ou clientSecret');
     } catch (error: any) {
       console.error('Erro ao processar pagamento:', error);
-      alert(
-        language === 'en' 
+      // Usar o toast em vez de alert para melhor UX
+      toast({
+        title: language === 'en' ? 'Payment Error' : 'Erro no Pagamento',
+        description: language === 'en' 
           ? 'Error processing payment. Please try again.' 
-          : 'Erro ao processar pagamento. Por favor, tente novamente.'
-      );
+          : 'Erro ao processar pagamento. Por favor, tente novamente.',
+        variant: "destructive",
+      });
       setIsLoading(false);
     }
   };
