@@ -1,0 +1,143 @@
+const Stripe = require('stripe');
+const { createClient } = require('@supabase/supabase-js');
+
+// Inicializar o Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// Configurar cliente Supabase
+const supabaseUrl = process.env.SUPABASE_URL || 'https://eyzywpxlcyjnwbbxjwwg.supabase.co';
+const supabaseKey = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5enl3cHhsY3lqbndpYnhqd3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTIyODU3NzMsImV4cCI6MjAyNzg2MTc3M30.7RcDyuDgQQzTx8X3sSOTzQKRcg9Dp2S3sLVYEW79X0I';
+const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+// Referência ao armazenamento temporário de formData
+// Em produção, usaria Redis ou Firestore para esta finalidade
+const formDataStorage = require('./store-form-data').formDataStorage || {};
+
+module.exports = async (req, res) => {
+  // Habilitar CORS
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+  // Tratar preflight request
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  // Apenas aceitar GET
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  try {
+    const { sessionId, formId, plan, test } = req.query;
+    
+    if (!sessionId || !formId) {
+      return res.status(400).json({ error: 'sessionId e formId são obrigatórios' });
+    }
+    
+    // Verificar status da sessão
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    
+    if (session.payment_status === 'paid') {
+      console.log(`[PAYMENT SUCCESS] Pagamento confirmado para a sessão ${sessionId}`);
+      
+      // Verificar dados armazenados
+      if (formDataStorage[formId]) {
+        const storedData = formDataStorage[formId];
+        
+        try {
+          // Extrair dados
+          const { formData } = storedData;
+          const isTestPayment = test === 'true';
+          
+          // Preparar dados para Supabase
+          const submissionData = {
+            id: formId,
+            name: formData.name || 'Sem nome',
+            email: formData.email || 'sem@email.com',
+            phone: formData.phone || '',
+            business: formData.business || '',
+            description: formData.description || '',
+            plan: plan || 'não especificado',
+            payment_id: sessionId,
+            payment_status: 'completed',
+            payment_date: new Date().toISOString(),
+            payment_test: isTestPayment,
+            payment_amount: isTestPayment ? 100 : (plan === 'annual' ? 59880 : 5980),
+            payment_currency: 'brl',
+            created_at: new Date().toISOString()
+          };
+          
+          // Salvar no Supabase
+          try {
+            const { data, error } = await supabaseClient
+              .from('form_submissions')
+              .upsert(submissionData, { onConflict: 'id' });
+              
+            if (error) {
+              console.error('[PAYMENT SUCCESS] Erro ao salvar no Supabase:', error);
+            } else {
+              console.log('[PAYMENT SUCCESS] Dados salvos com sucesso no Supabase');
+            }
+          } catch (supabaseError) {
+            console.error('[PAYMENT SUCCESS] Exceção ao salvar no Supabase:', supabaseError);
+          }
+          
+          // Limpar dados temporários
+          delete formDataStorage[formId];
+        } catch (dbError) {
+          console.error('[PAYMENT SUCCESS] Erro ao processar dados:', dbError);
+        }
+      } else {
+        // Caso de pagamento sem dados temporários
+        console.log(`[PAYMENT SUCCESS] Nenhum dado temporário para formId: ${formId}`);
+        
+        try {
+          const isTestPayment = test === 'true';
+          
+          const minimalData = {
+            id: formId, 
+            payment_id: sessionId,
+            payment_status: 'completed',
+            payment_date: new Date().toISOString(),
+            payment_test: isTestPayment,
+            payment_amount: isTestPayment ? 100 : (plan === 'annual' ? 59880 : 5980),
+            payment_currency: 'brl',
+            plan: plan || 'não especificado',
+            created_at: new Date().toISOString(),
+            name: 'Pagamento sem dados', 
+            email: 'pagamento@semformulario.com'
+          };
+          
+          // Tentar salvar dados mínimos
+          try {
+            const { error } = await supabaseClient
+              .from('form_submissions')
+              .upsert(minimalData, { onConflict: 'id' });
+              
+            if (error) {
+              console.error('[PAYMENT SUCCESS] Erro ao salvar dados mínimos:', error);
+            } else {
+              console.log('[PAYMENT SUCCESS] Dados mínimos salvos com sucesso');
+            }
+          } catch (supabaseError) {
+            console.error('[PAYMENT SUCCESS] Exceção ao salvar dados mínimos:', supabaseError);
+          }
+        } catch (minError) {
+          console.error('[PAYMENT SUCCESS] Erro ao processar dados mínimos:', minError);
+        }
+      }
+      
+      // Redirecionar para página de sucesso
+      return res.redirect(`/?success=true&plan=${plan}&sessionId=${sessionId}`);
+    } else {
+      console.log(`[PAYMENT SUCCESS] Pagamento não confirmado: ${session.payment_status}`);
+      return res.redirect('/?success=false');
+    }
+  } catch (error) {
+    console.error('[PAYMENT SUCCESS] Erro:', error);
+    return res.redirect('/?success=false&error=processing');
+  }
+};

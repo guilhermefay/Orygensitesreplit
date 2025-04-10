@@ -1,69 +1,76 @@
-# Welcome to your Lovable project
+# Zero Cost Website
 
-## Project info
+Plataforma completa para criação de sites com integração de pagamentos Stripe.
 
-**URL**: https://lovable.dev/projects/4318dfc9-fa97-46a6-b768-ff8df1ada218
+## Sobre o Projeto
 
-## How can I edit this code?
+Este projeto oferece uma solução completa para criar sites com processamento de pagamentos integrado. Possui:
 
-There are several ways of editing your application.
+- Frontend em React/Vite
+- Backend em Express.js
+- Integração com Stripe para pagamentos
+- Armazenamento de dados com Supabase
 
-**Use Lovable**
+## Configuração para Deploy na Vercel
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/4318dfc9-fa97-46a6-b768-ff8df1ada218) and start prompting.
+### Pré-requisitos
 
-Changes made via Lovable will be committed automatically to this repo.
+1. Uma conta na [Vercel](https://vercel.com)
+2. Uma conta no [Stripe](https://stripe.com)
+3. Uma conta no [Supabase](https://supabase.com)
 
-**Use your preferred IDE**
+### Variáveis de Ambiente
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Configure as seguintes variáveis de ambiente no seu projeto Vercel:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+STRIPE_SECRET_KEY=sk_xxxxxxxxxxxxxxxxxx
+VITE_STRIPE_PUBLIC_KEY=pk_xxxxxxxxxxxxxxxxxx
+SUPABASE_URL=https://xxxxxxxxxxxxxx.supabase.co
+SUPABASE_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-**Edit a file directly in GitHub**
+### Passos para Deploy
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. Faça login na Vercel e importe o repositório
+2. Configure as variáveis de ambiente listadas acima
+3. Utilize as seguintes configurações:
 
-**Use GitHub Codespaces**
+   - **Framework Preset**: Vite
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+   - **Install Command**: `npm install`
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+4. Clique em "Deploy"
 
-## What technologies are used for this project?
+### Verificando o Deploy
 
-This project is built with .
+Após o deploy, acesse a URL fornecida pela Vercel. A aplicação deve estar funcionando corretamente, incluindo:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- Frontend React/Vite
+- Funções Serverless na API
+- Integração com Stripe
+- Armazenamento no Supabase
 
-## How can I deploy this project?
+## Estrutura das Funções API
 
-Simply open [Lovable](https://lovable.dev/projects/4318dfc9-fa97-46a6-b768-ff8df1ada218) and click on Share -> Publish.
+O projeto usa a arquitetura de funções serverless da Vercel:
 
-## I want to use a custom domain - is that possible?
+- `/api/checkout.js` - Endpoint principal para integração com Stripe
+- `/api/checkout-direct.js` - Redireciona para links diretos do Stripe
+- `/api/store-form-data.js` - Armazena temporariamente os dados do formulário
+- `/api/process-payment-success.js` - Processa pagamentos bem-sucedidos
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+## Testando Pagamentos
+
+Para testar a integração com pagamentos:
+
+1. Use a página `/teste` para fazer um pagamento de R$ 1,00
+2. Verifique se os dados são salvos corretamente no Supabase
+3. Confirme o fluxo completo de checkout e redirecionamento
+
+## Recursos Adicionais
+
+- [Documentação da API Stripe](https://stripe.com/docs/api)
+- [Documentação do Supabase](https://supabase.com/docs)
+- [Documentação da Vercel para Funções Serverless](https://vercel.com/docs/serverless-functions/introduction)
