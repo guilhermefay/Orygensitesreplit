@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { ContactFormData, FileData } from "./types";
 import StripeElementsProvider from "./cart/StripeElementsProvider";
+import SimpleStripeRedirect from "./cart/SimpleStripeRedirect";
 import PayPalCheckout from "./PayPalCheckout";
 import { PricingConfiguration } from "@/lib/config/pricing";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -117,12 +118,19 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                 <h4 className="text-lg font-medium mb-4">
                   {language === 'en' ? 'Pay with Card' : 'Pagar com Cartão'}
                 </h4>
-                <StripeElementsProvider
-                  amount={price.totalPrice}
-                  plan={selectedPlan}
-                  formId={formId}
-                  onSuccess={onPaymentSuccess}
-                />
+                <div className="space-y-4">
+                  <SimpleStripeRedirect 
+                    amount={price.totalPrice}
+                    plan={selectedPlan}
+                    formId={formId}
+                    onSuccess={onPaymentSuccess}
+                  />
+                  <div className="text-xs text-gray-500 text-center mt-2">
+                    {language === 'en' 
+                      ? 'You will be redirected to a secure payment page' 
+                      : 'Você será redirecionado para uma página de pagamento segura'}
+                  </div>
+                </div>
               </div>
             ) : (
               <PayPalCheckout

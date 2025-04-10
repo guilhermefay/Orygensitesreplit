@@ -14,7 +14,7 @@ export function setupCreatePaymentIntent(app) {
   // Configurar rota para criar PaymentIntent
   app.post('/api/create-payment-intent', async (req, res) => {
     try {
-      const { amount, currency = 'brl', plan, formId } = req.body;
+      const { amount, currency = 'brl', plan, formId, redirect = false } = req.body;
 
       // Validar os parâmetros
       if (!amount || !plan) {
@@ -28,8 +28,11 @@ export function setupCreatePaymentIntent(app) {
         ? 'Plano Anual - Zero Cost Website' 
         : 'Plano Mensal - Zero Cost Website';
 
-      // Criar a PaymentIntent
-      const paymentIntent = await stripe.paymentIntents.create({
+      // Determinar o modo de pagamento
+      const paymentMode = redirect ? 'payment' : 'payment';
+
+      // Criar objeto de configuração base para o Stripe
+      const paymentConfig = {
         amount: Number(amount),
         currency: currency.toLowerCase(),
         description,
@@ -37,10 +40,53 @@ export function setupCreatePaymentIntent(app) {
           plan,
           formId: formId || 'unknown'
         }
-      });
+      };
 
-      // Retornar o clientSecret para o frontend
-      res.json({ clientSecret: paymentIntent.client_secret });
+      // Criar a URL de retorno se necessário
+      let successUrl = null;
+      if (redirect) {
+        // Adiciona a URL de sucesso baseada na URL atual
+        // O parâmetro "success=true" é para indicar ao aplicativo que o pagamento foi bem sucedido
+        const host = req.headers.host || 'localhost:5000';
+        const protocol = req.headers['x-forwarded-proto'] || 'http';
+        successUrl = `${protocol}://${host}?success=true&plan=${plan}`;
+      }
+
+      // Se o cliente solicitou redirecionamento, criamos uma Checkout Session
+      if (redirect && successUrl) {
+        // Criar uma sessão de checkout em vez de PaymentIntent direta
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price_data: {
+                currency: currency.toLowerCase(),
+                product_data: {
+                  name: description,
+                },
+                unit_amount: Number(amount),
+              },
+              quantity: 1,
+            },
+          ],
+          mode: paymentMode,
+          success_url: successUrl,
+          cancel_url: successUrl.replace('success=true', 'success=false'),
+          metadata: paymentConfig.metadata,
+        });
+
+        // Retornar a URL de redirecionamento para o frontend
+        res.json({ 
+          redirectUrl: session.url,
+          sessionId: session.id
+        });
+      } else {
+        // Comportamento padrão: criar PaymentIntent para uso com Elements
+        const paymentIntent = await stripe.paymentIntents.create(paymentConfig);
+
+        // Retornar o clientSecret para o frontend
+        res.json({ clientSecret: paymentIntent.client_secret });
+      }
     } catch (error) {
       console.error('Erro ao criar PaymentIntent:', error);
       
