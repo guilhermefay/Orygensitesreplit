@@ -128,11 +128,11 @@ export function setupStripeRedirect(app) {
   app.get('/api/checkout-redirect', async (req, res) => {
     try {
       // Extrair parâmetros da URL
-      const { amount, currency = 'brl', plan, formId } = req.query;
+      const { amount, currency = 'brl', plan, formId, test } = req.query;
       
       // Log detalhado para depuração
       console.log('[STRIPE REDIRECT] Requisição de checkout recebida:', {
-        amount, currency, plan, formId,
+        amount, currency, plan, formId, test,
         query: req.query,
         headers: {
           host: req.headers.host,
@@ -148,17 +148,22 @@ export function setupStripeRedirect(app) {
         return res.status(400).send(errorMsg);
       }
       
-      // Criar descrição do produto com base no plano
-      const description = plan === 'annual' 
-        ? 'Plano Anual - Zero Cost Website' 
-        : 'Plano Mensal - Zero Cost Website';
+      // Criar descrição do produto com base no plano e se é um teste
+      let description;
+      if (test === 'true') {
+        description = 'TESTE - R$ 1,00 - Zero Cost Website';
+      } else {
+        description = plan === 'annual' 
+          ? 'Plano Anual - Zero Cost Website' 
+          : 'Plano Mensal - Zero Cost Website';
+      }
       
       // Construir a URL de retorno após pagamento
       const host = req.headers.host || 'localhost:5000';
       const protocol = req.headers['x-forwarded-proto'] || 'http';
       
       // URL de sucesso agora inclui formId para podermos processar os dados no callback
-      const successUrl = `${protocol}://${host}/api/process-payment-success?sessionId={CHECKOUT_SESSION_ID}&formId=${formId}&plan=${plan}`;
+      const successUrl = `${protocol}://${host}/api/process-payment-success?sessionId={CHECKOUT_SESSION_ID}&formId=${formId}&plan=${plan}${test ? '&test=true' : ''}`;
       const cancelUrl = `${protocol}://${host}?success=false`;
       
       console.log('[STRIPE REDIRECT] Criando Checkout Session para redirecionamento direto');
@@ -182,7 +187,8 @@ export function setupStripeRedirect(app) {
         metadata: {
           plan,
           formId: formId || 'unknown',
-          source: 'checkout-redirect'
+          source: 'checkout-redirect',
+          test: test ? 'true' : 'false'
         },
       });
       

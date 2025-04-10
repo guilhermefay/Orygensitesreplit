@@ -182,6 +182,45 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                     {language === 'en' ? 'Pay with Credit Card' : 'Pagar com Cartão de Crédito'}
                   </button>
                   
+                  {/* Botão para teste com 1 real */}
+                  <button
+                    onClick={async () => {
+                      try {
+                        // Mesmo fluxo do botão principal, mas força a criação de sessão com 1 real
+                        console.log("MODO TESTE: Armazenando dados temporariamente antes de redirecionar...");
+                        
+                        const effectiveFormId = formId || `test_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+                        
+                        // Armazenar dados temporariamente
+                        await fetch('/api/store-form-data', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({ 
+                            formId: effectiveFormId,
+                            formData, 
+                            files, 
+                            colorPalette, 
+                            finalContent,
+                            plan: selectedPlan
+                          }),
+                        });
+                        
+                        // Redirecionar para a rota de teste
+                        const redirectUrl = `/api/checkout-redirect?amount=100&currency=brl&plan=${selectedPlan}&formId=${effectiveFormId}&test=true`;
+                        console.log(`Redirecionando para sessão de teste (1 real): ${redirectUrl}`);
+                        window.location.href = redirectUrl;
+                      } catch (error) {
+                        console.error("Erro ao processar pagamento de teste:", error);
+                        alert("Ocorreu um erro ao processar o pagamento de teste. Por favor, tente novamente.");
+                      }
+                    }}
+                    className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition-all flex items-center justify-center mt-4"
+                  >
+                    Testar com R$ 1,00
+                  </button>
+                  
                   <div className="flex items-center justify-center gap-2 mt-2">
                     <div className="text-xs text-gray-500 text-center">
                       {language === 'en' 
