@@ -1,8 +1,13 @@
-const express = require('express');
-const { createServer } = require('http');
-const { setupCreatePaymentIntent } = require('./src/server/create-payment-intent');
-const path = require('path');
-const cors = require('cors');
+import express from 'express';
+import { createServer } from 'http';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import cors from 'cors';
+import { setupCreatePaymentIntent } from './src/server/create-payment-intent.js';
+
+// Configurar __dirname para ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Cria uma aplicação Express
 const app = express();
@@ -16,22 +21,18 @@ app.use(express.json());
 // Configurar o endpoint de pagamento do Stripe
 setupCreatePaymentIntent(app);
 
-// Configurar rota para servir os arquivos estáticos se estiver em produção
-app.use(express.static(path.join(__dirname, 'dist')));
+// Configurar porta para o servidor da API diferente do servidor de desenvolvimento
+const API_PORT = process.env.API_PORT || 5001;
 
-// Rota de fallback para o React Router
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
+// Apenas configurar as rotas necessárias para a API
+// Não precisamos servir arquivos estáticos no servidor de API
 
 // Criar o servidor HTTP
 const server = createServer(app);
 
-// Definir a porta
-const PORT = process.env.PORT || 5000;
-
+// Usar a porta da API que definimos acima
 // Iniciar o servidor
-server.listen(PORT, () => {
-  console.log(`Servidor Express rodando na porta ${PORT}`);
-  console.log(`API disponível em http://localhost:${PORT}/api`);
+server.listen(API_PORT, () => {
+  console.log(`Servidor Express rodando na porta ${API_PORT}`);
+  console.log(`API disponível em http://localhost:${API_PORT}/api`);
 });

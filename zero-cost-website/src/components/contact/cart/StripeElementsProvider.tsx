@@ -36,8 +36,8 @@ const StripeElementsProvider: React.FC<StripeElementsProviderProps> = ({
         // Calcular o valor em centavos
         const amountInCents = Math.round(amount * 100);
         
-        // Criar a PaymentIntent
-        const response = await fetch('/api/create-payment-intent', {
+        // Criar a PaymentIntent - apontando para o servidor Express
+        const response = await fetch('http://localhost:5001/api/create-payment-intent', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

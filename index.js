@@ -25,11 +25,20 @@ async function main() {
     // Install dependencies
     console.log('Installing dependencies...');
     await runCommand('npm install', repoPath);
+    
+    // Instalar dependências adicionais para o servidor Express
+    console.log('Installing Express server dependencies...');
+    await runCommand('npm install express cors stripe', repoPath);
 
     // Start the Express API server
     console.log('Starting the Express API server...');
+    
+    // Não é necessário copiar, já criamos o arquivo diretamente
+    // no diretório correto usando o editor de strings
+    
+    // Execute o servidor no diretório correto
     const apiServerProcess = exec('node server.js', { 
-      cwd: __dirname 
+      cwd: repoPath
     });
 
     // Forward stdout and stderr to console for API server
