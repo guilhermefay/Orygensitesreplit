@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 interface SimpleStripeRedirectProps {
   amount: number;
@@ -66,20 +65,31 @@ const SimpleStripeRedirect: React.FC<SimpleStripeRedirectProps> = ({
       
       const data = await response.json();
       
+      console.log('Resposta do servidor:', data);
+      
       // Verificar se recebemos uma URL para redirecionamento
       if (data.redirectUrl) {
+        console.log('Redirecionando para URL do Stripe:', data.redirectUrl);
         // Redirecionar para a página de pagamento do Stripe
         window.location.href = data.redirectUrl;
       } else if (data.clientSecret) {
-        // Alternativa: usar a clientSecret para integração com checkout.stripe.com
-        const stripeCheckoutUrl = `https://checkout.stripe.com/pay/${data.clientSecret}`;
-        window.location.href = stripeCheckoutUrl;
+        if (data.useCheckoutPage) {
+          // Usar a página de checkout do Stripe diretamente
+          console.log('Redirecionando para checkout.stripe.com');
+          const stripeCheckoutUrl = `https://checkout.stripe.com/pay/${data.clientSecret}`;
+          window.location.href = stripeCheckoutUrl;
+        } else {
+          // Fallback para checkout.stripe.com
+          console.log('Usando fallback para checkout.stripe.com');
+          const stripeCheckoutUrl = `https://checkout.stripe.com/pay/${data.clientSecret}`;
+          window.location.href = stripeCheckoutUrl;
+        }
       } else {
-        throw new Error('Resposta inválida do servidor');
+        throw new Error('Resposta inválida do servidor, não contém redirectUrl ou clientSecret');
       }
     } catch (error: any) {
       console.error('Erro ao processar pagamento:', error);
-      toast.error(
+      alert(
         language === 'en' 
           ? 'Error processing payment. Please try again.' 
           : 'Erro ao processar pagamento. Por favor, tente novamente.'

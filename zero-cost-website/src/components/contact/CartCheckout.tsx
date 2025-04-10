@@ -125,7 +125,17 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                     formId={formId}
                     onSuccess={onPaymentSuccess}
                   />
-                  <div className="text-xs text-gray-500 text-center mt-2">
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <img src="/stripe-logo.svg" alt="Stripe" className="h-5" onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }} />
+                    <div className="text-xs text-gray-500 text-center">
+                      {language === 'en' 
+                        ? 'Secure payment processed by Stripe' 
+                        : 'Pagamento seguro processado pela Stripe'}
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500 text-center mt-1">
                     {language === 'en' 
                       ? 'You will be redirected to a secure payment page' 
                       : 'Você será redirecionado para uma página de pagamento segura'}

@@ -11,6 +11,11 @@ export function setupCreatePaymentIntent(app) {
   // Inicializar o Stripe
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+  // Função para log de depuração
+  const debugLog = (message, data) => {
+    console.log(`[Stripe API] ${message}`, data || '');
+  };
+
   // Configurar rota para criar PaymentIntent
   app.post('/api/create-payment-intent', async (req, res) => {
     try {
@@ -54,32 +59,57 @@ export function setupCreatePaymentIntent(app) {
 
       // Se o cliente solicitou redirecionamento, criamos uma Checkout Session
       if (redirect && successUrl) {
-        // Criar uma sessão de checkout em vez de PaymentIntent direta
-        const session = await stripe.checkout.sessions.create({
-          payment_method_types: ['card'],
-          line_items: [
-            {
-              price_data: {
-                currency: currency.toLowerCase(),
-                product_data: {
-                  name: description,
-                },
-                unit_amount: Number(amount),
-              },
-              quantity: 1,
-            },
-          ],
-          mode: paymentMode,
-          success_url: successUrl,
-          cancel_url: successUrl.replace('success=true', 'success=false'),
-          metadata: paymentConfig.metadata,
+        debugLog('Criando Checkout Session com redirect', { 
+          successUrl, 
+          amount: Number(amount), 
+          description 
         });
 
-        // Retornar a URL de redirecionamento para o frontend
-        res.json({ 
-          redirectUrl: session.url,
-          sessionId: session.id
-        });
+        try {
+          // Criar uma sessão de checkout em vez de PaymentIntent direta
+          const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [
+              {
+                price_data: {
+                  currency: currency.toLowerCase(),
+                  product_data: {
+                    name: description,
+                  },
+                  unit_amount: Number(amount),
+                },
+                quantity: 1,
+              },
+            ],
+            mode: paymentMode,
+            success_url: successUrl,
+            cancel_url: successUrl.replace('success=true', 'success=false'),
+            metadata: paymentConfig.metadata,
+          });
+
+          debugLog('Checkout Session criada com sucesso', { 
+            sessionId: session.id,
+            url: session.url 
+          });
+
+          // Retornar a URL de redirecionamento para o frontend
+          res.json({ 
+            redirectUrl: session.url,
+            sessionId: session.id
+          });
+        } catch (sessionError) {
+          debugLog('Erro ao criar Checkout Session', sessionError);
+          
+          // Tentar criar um PaymentIntent normal como fallback
+          debugLog('Tentando criar PaymentIntent como fallback');
+          const paymentIntent = await stripe.paymentIntents.create(paymentConfig);
+          
+          // Retornar o clientSecret e uma flag indicando para usar checkout.stripe.com
+          res.json({ 
+            clientSecret: paymentIntent.client_secret,
+            useCheckoutPage: true
+          });
+        }
       } else {
         // Comportamento padrão: criar PaymentIntent para uso com Elements
         const paymentIntent = await stripe.paymentIntents.create(paymentConfig);
