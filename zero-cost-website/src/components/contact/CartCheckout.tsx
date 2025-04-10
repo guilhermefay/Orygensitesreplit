@@ -121,12 +121,22 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                   {language === 'en' ? 'Pay with Card' : 'Pagar com Cartão'}
                 </h4>
                 <div className="space-y-4">
-                  <SimpleStripeRedirect 
-                    amount={price.totalPrice}
-                    plan={selectedPlan}
-                    formId={formId}
-                    onSuccess={onPaymentSuccess}
-                  />
+                  {/* Sempre forçar o uso do SimpleStripeRedirect em vez do StripeElementsProvider */}
+                  {useStripeRedirect === false ? (
+                    <StripeElementsProvider 
+                      amount={price.totalPrice}
+                      plan={selectedPlan}
+                      formId={formId}
+                      onSuccess={onPaymentSuccess}
+                    />
+                  ) : (
+                    <SimpleStripeRedirect 
+                      amount={price.totalPrice}
+                      plan={selectedPlan}
+                      formId={formId}
+                      onSuccess={onPaymentSuccess}
+                    />
+                  )}
                   <div className="flex items-center justify-center gap-2 mt-2">
                     <img src="/stripe-logo.svg" alt="Stripe" className="h-5" onError={(e) => {
                       e.currentTarget.style.display = 'none';
