@@ -120,26 +120,16 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                   {language === 'en' ? 'Pay with Card' : 'Pagar com Cartão'}
                 </h4>
                 <div className="space-y-4">
-                  {/* Redirecionar diretamente para a página de checkout do Stripe */}
-                  <button
-                    onClick={() => {
-                      // Calcular o valor em centavos
-                      const amountInCents = Math.round(price.totalPrice * 100);
-                      
-                      // Criar a URL com query parameters
-                      const redirectUrl = `/api/checkout-redirect?amount=${amountInCents}&currency=brl&plan=${selectedPlan}&formId=${formId || 'unknown'}`;
-                      
-                      // Redirecionar para o servidor que criará a sessão de checkout
-                      window.location.href = redirectUrl;
-                    }}
-                    className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-all"
+                  {/* Botão simples que usa apenas HTML/CSS, sem nenhum componente React complexo */}
+                  <a 
+                    href={`/api/checkout-redirect?amount=${Math.round(price.totalPrice * 100)}&currency=brl&plan=${selectedPlan}&formId=${formId || 'unknown'}`}
+                    className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-all flex items-center justify-center"
+                    style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}
                   >
                     {language === 'en' ? 'Pay with Credit Card' : 'Pagar com Cartão de Crédito'}
-                  </button>
+                  </a>
+                  
                   <div className="flex items-center justify-center gap-2 mt-2">
-                    <img src="/stripe-logo.svg" alt="Stripe" className="h-5" onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }} />
                     <div className="text-xs text-gray-500 text-center">
                       {language === 'en' 
                         ? 'Secure payment processed by Stripe' 
