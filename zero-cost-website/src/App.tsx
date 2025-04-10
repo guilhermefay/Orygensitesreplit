@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import PlanPage from "./components/PlanPage";
 import SuccessPage from "./pages/SuccessPage"; 
+import TestePayment from "./pages/TestePayment";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { supabase } from "./lib/supabase/client";
 
@@ -92,6 +93,7 @@ const App = () => (
             <Route path="/planos/promotion_usd" element={<PlanPage variant="promotion_usd" />} />
             <Route path="/planos/a" element={<PlanPage variant="a" />} />
             <Route path="/payment-success" element={<SuccessPage />} />
+            <Route path="/teste" element={<TestePayment />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

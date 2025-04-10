@@ -12,6 +12,7 @@
   "dependencies": {
     "@stripe/react-stripe-js": "^3.6.0",
     "@stripe/stripe-js": "^7.0.0",
+    "@supabase/supabase-js": "^2.49.4",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "stripe": "^18.0.0"

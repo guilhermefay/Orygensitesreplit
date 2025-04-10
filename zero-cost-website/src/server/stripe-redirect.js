@@ -1,4 +1,10 @@
 import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
+
+// Criar cliente Supabase com as credenciais de ambiente
+const supabaseUrl = process.env.SUPABASE_URL || 'https://eyzywpxlcyjnwbbxjwwg.supabase.co';
+const supabaseKey = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5enl3cHhsY3lqbndpYnhqd3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTIyODU3NzMsImV4cCI6MjAyNzg2MTc3M30.7RcDyuDgQQzTx8X3sSOTzQKRcg9Dp2S3sLVYEW79X0I';
+const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
 /**
  * Configurar a rota de redirecionamento para o Stripe Checkout
@@ -243,13 +249,83 @@ export function setupStripeRedirect(app) {
         
         // Se temos dados armazenados temporariamente, enviá-los para o Supabase
         if (formDataStore.has(formId)) {
-          // Aqui enviaria para o Supabase
+          const storedData = formDataStore.get(formId);
           console.log(`[PAYMENT SUCCESS] Enviando dados para o Supabase para formId: ${formId}`);
+          
+          try {
+            // Extrair dados do formulário para inserção no Supabase
+            const { formData } = storedData;
+            const isTestPayment = req.query.test === 'true';
+            
+            // Dados para inserir no Supabase
+            const submissionData = {
+              id: formId,  // Usar o formId como ID para evitar duplicação
+              name: formData.name || 'Sem nome',
+              email: formData.email || 'sem@email.com',
+              phone: formData.phone || '',
+              business: formData.business || '',
+              description: formData.description || '',
+              plan: plan || 'não especificado',
+              payment_id: sessionId,
+              payment_status: 'completed',
+              payment_date: new Date().toISOString(),
+              payment_test: isTestPayment,
+              payment_amount: isTestPayment ? 100 : (plan === 'annual' ? 59880 : 5980),
+              payment_currency: 'brl',
+              created_at: new Date().toISOString()
+            };
+            
+            console.log('[PAYMENT SUCCESS] Dados a serem enviados para o Supabase:', submissionData);
+            
+            // Inserir no Supabase
+            const { data, error } = await supabaseClient
+              .from('form_submissions')
+              .upsert(submissionData, { onConflict: 'id' });
+              
+            if (error) {
+              console.error('[PAYMENT SUCCESS] Erro ao salvar no Supabase:', error);
+            } else {
+              console.log('[PAYMENT SUCCESS] Dados salvos com sucesso no Supabase:', data);
+            }
+          } catch (dbError) {
+            console.error('[PAYMENT SUCCESS] Erro ao processar dados para o Supabase:', dbError);
+          }
           
           // Limpar dados após salvar
           formDataStore.delete(formId);
         } else {
           console.log(`[PAYMENT SUCCESS] Nenhum dado temporário encontrado para formId: ${formId}`);
+          
+          // Mesmo sem dados temporários, podemos tentar registrar o pagamento
+          try {
+            const isTestPayment = req.query.test === 'true';
+            
+            const minimalData = {
+              id: formId, 
+              payment_id: sessionId,
+              payment_status: 'completed',
+              payment_date: new Date().toISOString(),
+              payment_test: isTestPayment,
+              payment_amount: isTestPayment ? 100 : (plan === 'annual' ? 59880 : 5980),
+              payment_currency: 'brl',
+              plan: plan || 'não especificado',
+              created_at: new Date().toISOString(),
+              name: 'Pagamento sem dados', 
+              email: 'pagamento@semformulario.com'
+            };
+            
+            const { error } = await supabaseClient
+              .from('form_submissions')
+              .upsert(minimalData, { onConflict: 'id' });
+              
+            if (error) {
+              console.error('[PAYMENT SUCCESS] Erro ao salvar pagamento mínimo no Supabase:', error);
+            } else {
+              console.log('[PAYMENT SUCCESS] Registro mínimo de pagamento salvo no Supabase');
+            }
+          } catch (minError) {
+            console.error('[PAYMENT SUCCESS] Erro ao salvar registro mínimo:', minError);
+          }
         }
         
         // Redirecionar para a página de sucesso
