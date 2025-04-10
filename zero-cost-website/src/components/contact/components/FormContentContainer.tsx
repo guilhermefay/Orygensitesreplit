@@ -24,6 +24,7 @@ interface FormContentContainerProps {
   handlePaymentBack: (e: React.MouseEvent) => void;
   pricingConfig?: PricingConfiguration;
   isStripePayment?: boolean;
+  useStripeRedirect?: boolean;
   formId?: string;
 }
 
@@ -43,6 +44,7 @@ const FormContentContainer: React.FC<FormContentContainerProps> = ({
   handlePaymentBack,
   pricingConfig,
   isStripePayment = false,
+  useStripeRedirect = true,
   formId
 }) => {
   // Get formId from the useFormSubmission hook or localStorage
@@ -91,6 +93,7 @@ const FormContentContainer: React.FC<FormContentContainerProps> = ({
           onPaymentSuccess={handlePaymentSuccess}
           onBack={handlePaymentBack}
           isStripePayment={isStripePayment}
+          useStripeRedirect={useStripeRedirect}
           pricingConfig={pricingConfig}
           formId={effectiveFormId}
           files={files}

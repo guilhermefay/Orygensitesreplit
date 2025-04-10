@@ -19,6 +19,7 @@ interface CartCheckoutProps {
   onBack: (e: React.MouseEvent) => void;
   pricingConfig?: PricingConfiguration;
   isStripePayment?: boolean;
+  useStripeRedirect?: boolean;
   formId: string;
   files: FileData;
   colorPalette: string[];
@@ -31,6 +32,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
   onBack,
   pricingConfig,
   isStripePayment = false,
+  useStripeRedirect = true,
   formId,
   files,
   colorPalette,

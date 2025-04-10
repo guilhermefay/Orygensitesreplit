@@ -51,7 +51,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
   } = useContactForm(onSuccess, initialPlan, pricingConfig);
 
   const { paymentCompleted, handlePaymentSuccess, resetPaymentFlag } = usePaymentTracking();
-  const { isStripePayment } = useFormInitialization(formId);
+  const { isStripePayment, useStripeRedirect } = useFormInitialization(formId);
   
   // Reset payment flag when step changes
   resetPaymentFlag(step);
@@ -168,6 +168,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
             handlePaymentBack={handlePaymentBack}
             pricingConfig={pricingConfig}
             isStripePayment={isStripePayment}
+            useStripeRedirect={useStripeRedirect}
             formId={formId}
           />
           
