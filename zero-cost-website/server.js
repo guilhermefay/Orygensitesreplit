@@ -12,13 +12,20 @@ const __dirname = path.dirname(__filename);
 // Cria uma aplicação Express
 const app = express();
 
-// Configurar CORS para permitir solicitações do frontend
-// Configuração mais permissiva para ambiente de desenvolvimento
-app.use(cors({
-  origin: '*', // Permite solicitações de qualquer origem
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// Configuração CORS completamente permissiva para ambiente de desenvolvimento
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  // Permitir preflight requests OPTIONS
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  next();
+});
 
 // Configurar middlewares
 app.use(express.json());

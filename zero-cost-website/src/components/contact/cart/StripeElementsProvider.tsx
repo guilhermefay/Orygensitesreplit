@@ -32,15 +32,27 @@ const StripeElementsProvider: React.FC<StripeElementsProviderProps> = ({
     const createPaymentIntent = async () => {
       try {
         setLoading(true);
+        console.log('Iniciando criação de PaymentIntent...');
 
         // Calcular o valor em centavos
         const amountInCents = Math.round(amount * 100);
+        console.log('Valor calculado em centavos:', amountInCents);
         
-        // Criar a PaymentIntent - apontando para o servidor Express
-        // Use a URL relativa para que funcione tanto em desenvolvimento quanto em produção
-        const apiUrl = window.location.hostname === 'localhost' 
-          ? 'http://localhost:5001/api/create-payment-intent'
-          : '/api/create-payment-intent';
+        // Criar a PaymentIntent - tentando várias abordagens para garantir conectividade
+        const network = window.location.hostname === 'localhost' 
+          ? 'localhost' 
+          : window.location.hostname;
+          
+        // No Replit, precisamos usar o mesmo hostname mas porta diferente
+        const apiUrl = `http://${network}:5001/api/create-payment-intent`;
+        console.log('Usando API URL:', apiUrl);
+        
+        console.log('Enviando requisição para criar PaymentIntent com dados:', { 
+          amount: amountInCents,
+          currency: 'brl',
+          plan,
+          formId
+        });
           
         const response = await fetch(apiUrl, {
           method: 'POST',
@@ -55,12 +67,23 @@ const StripeElementsProvider: React.FC<StripeElementsProviderProps> = ({
           }),
         });
 
+        console.log('Resposta recebida do servidor:', response.status, response.statusText);
+        
         if (!response.ok) {
           const errorData = await response.json();
+          console.error('Erro na resposta do servidor:', errorData);
           throw new Error(errorData.message || 'Erro ao criar PaymentIntent');
         }
 
         const data = await response.json();
+        console.log('PaymentIntent criado com sucesso, ClientSecret recebido');
+        
+        if (!data.clientSecret) {
+          console.error('Resposta não contém clientSecret:', data);
+          throw new Error('A resposta do servidor não contém um clientSecret válido');
+        }
+        
+        console.log('Definindo clientSecret e inicializando formulário de pagamento');
         setClientSecret(data.clientSecret);
       } catch (err: any) {
         console.error('Error creating payment intent:', err);
