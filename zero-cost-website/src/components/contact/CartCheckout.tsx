@@ -120,14 +120,67 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                   {language === 'en' ? 'Pay with Card' : 'Pagar com Cartão'}
                 </h4>
                 <div className="space-y-4">
-                  {/* Botão simples que usa apenas HTML/CSS, sem nenhum componente React complexo */}
-                  <a 
-                    href={`/api/checkout-redirect?amount=${Math.round(price.totalPrice * 100)}&currency=brl&plan=${selectedPlan}&formId=${formId || 'unknown'}`}
+                  {/* Botão que primeiro submete os dados para armazenamento temporário */}
+                  <button
+                    onClick={async () => {
+                      try {
+                        // 1. Primeiro, armazenar os dados temporariamente
+                        console.log("Armazenando dados temporariamente antes de redirecionar...");
+                        
+                        // Configurar identificador único para o formulário se não existir
+                        const effectiveFormId = formId || `temp_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+                        
+                        // Enviar os dados para armazenamento temporário
+                        const storeResponse = await fetch('/api/store-form-data', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({ 
+                            formId: effectiveFormId,
+                            formData, 
+                            files, 
+                            colorPalette, 
+                            finalContent,
+                            plan: selectedPlan
+                          }),
+                        });
+                        
+                        if (!storeResponse.ok) {
+                          throw new Error("Falha ao armazenar dados temporariamente");
+                        }
+                        
+                        console.log("Dados armazenados temporariamente com sucesso");
+                        
+                        // 2. Obter a URL para as novas sessões do Stripe
+                        const isVariant2 = window.location.href.includes('variant2');
+                        const amountInCents = Math.round(price.totalPrice * 100);
+                        
+                        // Determinar qual abordagem usar
+                        const useDirectLinks = true; // Defina como false para usar a criação de sessão
+                        
+                        if (useDirectLinks) {
+                          // Redirecionar para URL direta (links do Stripe fornecidos)
+                          const redirectUrl = `/api/checkout-direct?plan=${selectedPlan}&formId=${effectiveFormId}${isVariant2 ? '&variant=variant2' : ''}`;
+                          console.log(`Redirecionando para URL direta: ${redirectUrl}`);
+                          window.location.href = redirectUrl;
+                        } else {
+                          // Redirecionar para a criação de sessão
+                          const redirectUrl = `/api/checkout-redirect?amount=${amountInCents}&currency=brl&plan=${selectedPlan}&formId=${effectiveFormId}`;
+                          console.log(`Redirecionando para criar sessão: ${redirectUrl}`);
+                          window.location.href = redirectUrl;
+                        }
+                      } catch (error) {
+                        console.error("Erro ao processar pagamento:", error);
+                        alert(language === 'en' 
+                          ? "There was an error processing your payment. Please try again."
+                          : "Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.");
+                      }
+                    }}
                     className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-all flex items-center justify-center"
-                    style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}
                   >
                     {language === 'en' ? 'Pay with Credit Card' : 'Pagar com Cartão de Crédito'}
-                  </a>
+                  </button>
                   
                   <div className="flex items-center justify-center gap-2 mt-2">
                     <div className="text-xs text-gray-500 text-center">
