@@ -1,7 +1,7 @@
-const Stripe = require('stripe');
-const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const path = require('path');
+import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
 
 // Inicializar o Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -25,7 +25,7 @@ function saveLocalBackup(data) {
   }
 }
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   // Habilitar CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
