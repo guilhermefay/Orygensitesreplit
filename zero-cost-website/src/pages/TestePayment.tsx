@@ -28,8 +28,13 @@ const TestePayment: React.FC = () => {
       // Gerar um ID único para este formulário
       const formId = `teste_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
       
-      // Armazenar os dados temporariamente
-      const response = await fetch('/api/store-form-data', {
+      // Armazenar os dados temporariamente (compatível com Vercel)
+      // Adaptamos para usar tanto a API do Express quanto da Vercel
+      const storeUrl = process.env.NODE_ENV === 'production' 
+        ? '/api/checkout/store-form-data' 
+        : '/api/store-form-data';
+      
+      const response = await fetch(storeUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,8 +59,10 @@ const TestePayment: React.FC = () => {
         throw new Error('Erro ao armazenar dados temporariamente');
       }
 
-      // Redirecionar para a sessão de pagamento com R$ 1,00
-      const redirectUrl = `/api/checkout-redirect?amount=100&currency=brl&plan=${formData.plano}&formId=${formId}&test=true`;
+      // Redirecionar para a sessão de pagamento com R$ 1,00 (compatível com Vercel)
+      const redirectUrl = process.env.NODE_ENV === 'production'
+        ? `/api/checkout/redirect?amount=100&currency=brl&plan=${formData.plano}&formId=${formId}&test=true`
+        : `/api/checkout-redirect?amount=100&currency=brl&plan=${formData.plano}&formId=${formId}&test=true`;
       console.log('Redirecionando para:', redirectUrl);
       window.location.href = redirectUrl;
     } catch (err: any) {

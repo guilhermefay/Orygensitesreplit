@@ -130,8 +130,12 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                         // Configurar identificador único para o formulário se não existir
                         const effectiveFormId = formId || `temp_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
                         
-                        // Enviar os dados para armazenamento temporário
-                        const storeResponse = await fetch('/api/store-form-data', {
+                        // Enviar os dados para armazenamento temporário (compatível com Vercel)
+                        const storeUrl = process.env.NODE_ENV === 'production' 
+                          ? '/api/checkout/store-form-data' 
+                          : '/api/store-form-data';
+                          
+                        const storeResponse = await fetch(storeUrl, {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
@@ -161,12 +165,22 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                         
                         if (useDirectLinks) {
                           // Redirecionar para URL direta (links do Stripe fornecidos)
-                          const redirectUrl = `/api/checkout-direct?plan=${selectedPlan}&formId=${effectiveFormId}${isVariant2 ? '&variant=variant2' : ''}`;
+                          // Compatível com Vercel
+                          const apiPath = process.env.NODE_ENV === 'production' 
+                            ? '/api/checkout/direct' 
+                            : '/api/checkout-direct';
+                            
+                          const redirectUrl = `${apiPath}?plan=${selectedPlan}&formId=${effectiveFormId}${isVariant2 ? '&variant=variant2' : ''}`;
                           console.log(`Redirecionando para URL direta: ${redirectUrl}`);
                           window.location.href = redirectUrl;
                         } else {
                           // Redirecionar para a criação de sessão
-                          const redirectUrl = `/api/checkout-redirect?amount=${amountInCents}&currency=brl&plan=${selectedPlan}&formId=${effectiveFormId}`;
+                          // Compatível com Vercel
+                          const apiPath = process.env.NODE_ENV === 'production' 
+                            ? '/api/checkout/redirect'
+                            : '/api/checkout-redirect';
+                            
+                          const redirectUrl = `${apiPath}?amount=${amountInCents}&currency=brl&plan=${selectedPlan}&formId=${effectiveFormId}`;
                           console.log(`Redirecionando para criar sessão: ${redirectUrl}`);
                           window.location.href = redirectUrl;
                         }
@@ -191,8 +205,12 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                         
                         const effectiveFormId = formId || `test_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
                         
-                        // Armazenar dados temporariamente
-                        await fetch('/api/store-form-data', {
+                        // Armazenar dados temporariamente (compatível com Vercel)
+                        const storeUrl = process.env.NODE_ENV === 'production' 
+                          ? '/api/checkout/store-form-data' 
+                          : '/api/store-form-data';
+                        
+                        await fetch(storeUrl, {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
@@ -207,8 +225,10 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                           }),
                         });
                         
-                        // Redirecionar para a rota de teste
-                        const redirectUrl = `/api/checkout-redirect?amount=100&currency=brl&plan=${selectedPlan}&formId=${effectiveFormId}&test=true`;
+                        // Redirecionar para a rota de teste (compatível com Vercel)
+                        const redirectUrl = process.env.NODE_ENV === 'production'
+                          ? `/api/checkout/redirect?amount=100&currency=brl&plan=${selectedPlan}&formId=${effectiveFormId}&test=true`
+                          : `/api/checkout-redirect?amount=100&currency=brl&plan=${selectedPlan}&formId=${effectiveFormId}&test=true`;
                         console.log(`Redirecionando para sessão de teste (1 real): ${redirectUrl}`);
                         window.location.href = redirectUrl;
                       } catch (error) {
