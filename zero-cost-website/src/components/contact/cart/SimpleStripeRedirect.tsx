@@ -26,12 +26,21 @@ const SimpleStripeRedirect: React.FC<SimpleStripeRedirectProps> = ({
     setIsLoading(true);
     
     try {
-      // Primeiro, verificar se o Stripe está configurado
-      const testResponse = await fetch(`${window.location.origin}/api/stripe-test`);
-      const testData = await testResponse.json();
+      // Mostrar mensagem de carregamento em português ou inglês
+      const loadingMessage = language === 'en' ? 'Processing payment...' : 'Processando pagamento...';
+      toast.loading(loadingMessage, { id: 'payment-processing' });
       
-      if (testResponse.status !== 200 || testData.status !== 'ok') {
-        throw new Error(testData.message || 'Erro de configuração do Stripe no servidor');
+      try {
+        // Primeiro, verificar se o Stripe está configurado
+        const testResponse = await fetch(`${window.location.origin}/api/stripe-test`);
+        const testData = await testResponse.json();
+        
+        if (testResponse.status !== 200 || testData.status !== 'ok') {
+          throw new Error(testData.message || 'Erro de configuração do Stripe no servidor');
+        }
+      } catch (error) {
+        console.error('Erro ao verificar configuração do Stripe:', error);
+        // Continuar mesmo com erro, pois o servidor pode ainda funcionar
       }
       
       // Calcular o valor em centavos
@@ -51,50 +60,56 @@ const SimpleStripeRedirect: React.FC<SimpleStripeRedirectProps> = ({
         formId
       });
       
-      // Criar o PaymentIntent no servidor
+      // Forçar o uso do redirecionamento para o Checkout Session do Stripe
+      const payload = { 
+        amount: amountInCents,
+        currency: 'brl',
+        plan,
+        formId,
+        redirect: true // Forçar redirecionamento para Checkout Session
+      };
+      
+      console.log('Enviando payload para o servidor:', payload);
+      
+      // Criar o PaymentIntent ou Checkout Session no servidor
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          amount: amountInCents,
-          currency: 'brl',
-          plan,
-          formId,
-          redirect: true, // Indica que queremos URL de redirecionamento
-        }),
+        body: JSON.stringify(payload),
       });
       
       if (!response.ok) {
+        toast.dismiss('payment-processing');
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Erro ao criar PaymentIntent');
+        throw new Error(errorData.message || 'Erro ao criar sessão de pagamento');
       }
       
       const data = await response.json();
-      
       console.log('Resposta do servidor:', data);
       
-      // Verificar se recebemos uma URL para redirecionamento
+      // Remover todas as mensagens de toast
+      toast.dismiss();
+      
+      // Verificar se recebemos uma URL para redirecionamento (preferido)
       if (data.redirectUrl) {
         console.log('Redirecionando para URL do Stripe:', data.redirectUrl);
         // Redirecionar para a página de pagamento do Stripe
         window.location.href = data.redirectUrl;
-      } else if (data.clientSecret) {
-        if (data.useCheckoutPage) {
-          // Usar a página de checkout do Stripe diretamente
-          console.log('Redirecionando para checkout.stripe.com');
-          const stripeCheckoutUrl = `https://checkout.stripe.com/pay/${data.clientSecret}`;
-          window.location.href = stripeCheckoutUrl;
-        } else {
-          // Fallback para checkout.stripe.com
-          console.log('Usando fallback para checkout.stripe.com');
-          const stripeCheckoutUrl = `https://checkout.stripe.com/pay/${data.clientSecret}`;
-          window.location.href = stripeCheckoutUrl;
-        }
-      } else {
-        throw new Error('Resposta inválida do servidor, não contém redirectUrl ou clientSecret');
+        return;
+      } 
+      
+      // Fallback para clientSecret com checkout.stripe.com
+      if (data.clientSecret) {
+        console.log('Usando checkout.stripe.com com clientSecret');
+        const stripeCheckoutUrl = `https://checkout.stripe.com/pay/${data.clientSecret}`;
+        window.location.href = stripeCheckoutUrl;
+        return;
       }
+      
+      // Se chegou aqui, não temos uma forma de redirecionar
+      throw new Error('Resposta inválida do servidor, não contém redirectUrl ou clientSecret');
     } catch (error: any) {
       console.error('Erro ao processar pagamento:', error);
       alert(
