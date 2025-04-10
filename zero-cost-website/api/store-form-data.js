@@ -2,9 +2,9 @@
 let formDataStorage = {};
 
 // Expor o armazenamento para que outros módulos possam acessá-lo
-export { formDataStorage };
+module.exports.formDataStorage = formDataStorage;
 
-export default async (req, res) => {
+module.exports = async (req, res) => {
   // Habilitar CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');

@@ -1,11 +1,10 @@
-import express from 'express';
-import { createServer } from 'http';
-import { fileURLToPath } from 'url';
-import path from 'path';
-import cors from 'cors';
-import fs from 'fs';
-import { setupCreatePaymentIntent } from './src/server/create-payment-intent.js';
-import { setupStripeRedirect } from './src/server/stripe-redirect.js';
+const express = require('express');
+const { createServer } = require('http');
+const path = require('path');
+const cors = require('cors');
+const fs = require('fs');
+const { setupCreatePaymentIntent } = require('./src/server/create-payment-intent.js');
+const { setupStripeRedirect } = require('./src/server/stripe-redirect.js');
 
 // Configurar variáveis de ambiente para Stripe
 const REQUIRED_ENV_VARS = ['STRIPE_SECRET_KEY'];

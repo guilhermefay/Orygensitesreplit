@@ -1,6 +1,6 @@
-import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
-import { formDataStorage } from './store-form-data.js';
+const Stripe = require('stripe');
+const { createClient } = require('@supabase/supabase-js');
+const { formDataStorage } = require('./store-form-data');
 
 // Inicializar o Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -10,7 +10,7 @@ const supabaseUrl = process.env.SUPABASE_URL || 'https://eyzywpxlcyjnwbbxjwwg.su
 const supabaseKey = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5enl3cHhsY3lqbndpYnhqd3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTIyODU3NzMsImV4cCI6MjAyNzg2MTc3M30.7RcDyuDgQQzTx8X3sSOTzQKRcg9Dp2S3sLVYEW79X0I';
 const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-export default async (req, res) => {
+module.exports = async (req, res) => {
   // Habilitar CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');

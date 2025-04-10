@@ -1,9 +1,9 @@
-import Stripe from 'stripe';
+const Stripe = require('stripe');
 
 // Inicializar o Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-export default async (req, res) => {
+module.exports = async (req, res) => {
   // Habilitar CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
