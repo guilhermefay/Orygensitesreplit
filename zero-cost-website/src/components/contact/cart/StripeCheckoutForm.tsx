@@ -46,8 +46,14 @@ const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
         confirmParams: {
           // Retornar para a mesma página após o pagamento
           return_url: window.location.href,
+          // Passar informações adicionais
+          payment_method_data: {
+            billing_details: {
+              // Poderíamos preencher automaticamente se tivéssemos as informações do usuário
+            }
+          }
         },
-        redirect: 'if_required', // Importante: apenas redireciona se necessário
+        redirect: 'if_required', // Importante: apenas redireciona se absolutamente necessário
       });
 
       if (error) {

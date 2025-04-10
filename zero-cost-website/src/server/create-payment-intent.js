@@ -43,8 +43,24 @@ export function setupCreatePaymentIntent(app) {
       res.json({ clientSecret: paymentIntent.client_secret });
     } catch (error) {
       console.error('Erro ao criar PaymentIntent:', error);
+      
+      // Registrar detalhes adicionais para ajudar na depuração
+      console.error('Detalhes da requisição:', {
+        amount: req.body.amount,
+        currency: req.body.currency,
+        plan: req.body.plan,
+        formId: req.body.formId
+      });
+      
+      // Verificar se é um erro do Stripe ou outro tipo de erro
+      const errorMessage = error.type 
+        ? `Erro do Stripe (${error.type}): ${error.message}` 
+        : `Erro ao processar o pagamento: ${error.message}`;
+        
       res.status(500).json({ 
-        message: `Erro ao processar o pagamento: ${error.message}` 
+        message: errorMessage,
+        type: error.type || 'unknown_error',
+        code: error.code || 'internal_error'
       });
     }
   });
