@@ -5,6 +5,7 @@ import path from 'path';
 import cors from 'cors';
 import fs from 'fs';
 import { setupCreatePaymentIntent } from './src/server/create-payment-intent.js';
+import { setupStripeRedirect } from './src/server/stripe-redirect.js';
 
 // Configurar variáveis de ambiente para Stripe
 const REQUIRED_ENV_VARS = ['STRIPE_SECRET_KEY'];
@@ -43,8 +44,29 @@ app.use((req, res, next) => {
 // Configurar middlewares
 app.use(express.json());
 
-// Configurar o endpoint de pagamento do Stripe
+// Adicionar logging para todas as requisições
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
+// Configurar a rota principal de redirecionamento do Stripe
+// Esta é a solução recomendada para evitar erros de JavaScript
+setupStripeRedirect(app);
+
+// Manter a rota API antiga para compatibilidade
 setupCreatePaymentIntent(app);
+
+// Rota de diagnóstico para verificar configuração
+app.get('/api/diagnostics', (req, res) => {
+  res.json({
+    status: 'ok',
+    environment: process.env.NODE_ENV || 'production',
+    stripeConfigured: !!process.env.STRIPE_SECRET_KEY,
+    publicKeyConfigured: !!process.env.VITE_STRIPE_PUBLIC_KEY,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Definir a porta para o servidor
 const PORT = process.env.PORT || 5000;
