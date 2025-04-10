@@ -26,6 +26,26 @@ async function main() {
     console.log('Installing dependencies...');
     await runCommand('npm install', repoPath);
 
+    // Start the Express API server
+    console.log('Starting the Express API server...');
+    const apiServerProcess = exec('node server.js', { 
+      cwd: __dirname 
+    });
+
+    // Forward stdout and stderr to console for API server
+    apiServerProcess.stdout.on('data', (data) => {
+      console.log(`[API] ${data}`);
+    });
+
+    apiServerProcess.stderr.on('data', (data) => {
+      console.error(`[API] ${data}`);
+    });
+
+    // Handle API server process exit
+    apiServerProcess.on('exit', (code) => {
+      console.log(`API server exited with code ${code}`);
+    });
+
     // Start the development server
     console.log('Starting the development server...');
     // Use exec instead of runCommand to keep the process running
@@ -33,16 +53,16 @@ async function main() {
       cwd: repoPath 
     });
 
-    // Forward stdout and stderr to console
+    // Forward stdout and stderr to console for development server
     serverProcess.stdout.on('data', (data) => {
-      console.log(data);
+      console.log(`[DEV] ${data}`);
     });
 
     serverProcess.stderr.on('data', (data) => {
-      console.error(data);
+      console.error(`[DEV] ${data}`);
     });
 
-    // Handle process exit
+    // Handle development server process exit
     serverProcess.on('exit', (code) => {
       console.log(`Development server exited with code ${code}`);
     });

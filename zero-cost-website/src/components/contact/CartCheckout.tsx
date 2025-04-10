@@ -7,7 +7,7 @@ import PriceDisplay from "./cart/PriceDisplay";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { ContactFormData, FileData } from "./types";
-import StripePaymentButton from "./cart/StripePaymentButton";
+import StripeElementsProvider from "./cart/StripeElementsProvider";
 import PayPalCheckout from "./PayPalCheckout";
 import { PricingConfiguration } from "@/lib/config/pricing";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -113,14 +113,17 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
           {/* Payment Buttons */}
           <div className="mt-8 space-y-4">
             {isStripePayment ? (
-              <StripePaymentButton
-                amount={price.totalPrice}
-                plan={selectedPlan}
-                currency={price.currency}
-                formId={formId}
-                onSuccess={onPaymentSuccess}
-                className="bg-[#6772E5] hover:bg-[#5469D4] text-white"
-              />
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <h4 className="text-lg font-medium mb-4">
+                  {language === 'en' ? 'Pay with Card' : 'Pagar com Cartão'}
+                </h4>
+                <StripeElementsProvider
+                  amount={price.totalPrice}
+                  plan={selectedPlan}
+                  formId={formId}
+                  onSuccess={onPaymentSuccess}
+                />
+              </div>
             ) : (
               <PayPalCheckout
                 selectedPlan={selectedPlan}
