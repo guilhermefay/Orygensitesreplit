@@ -121,13 +121,22 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                   {language === 'en' ? 'Pay with Card' : 'Pagar com Cartão'}
                 </h4>
                 <div className="space-y-4">
-                  {/* Sempre usar SimpleStripeRedirect para maior compatibilidade */}
-                  <SimpleStripeRedirect 
-                    amount={price.totalPrice}
-                    plan={selectedPlan}
-                    formId={formId}
-                    onSuccess={onPaymentSuccess}
-                  />
+                  {/* Redirecionar diretamente para a página de checkout do Stripe */}
+                  <button
+                    onClick={() => {
+                      // Calcular o valor em centavos
+                      const amountInCents = Math.round(price.totalPrice * 100);
+                      
+                      // Criar a URL com query parameters
+                      const redirectUrl = `/api/checkout-redirect?amount=${amountInCents}&currency=brl&plan=${selectedPlan}&formId=${formId || 'unknown'}`;
+                      
+                      // Redirecionar para o servidor que criará a sessão de checkout
+                      window.location.href = redirectUrl;
+                    }}
+                    className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-all"
+                  >
+                    {language === 'en' ? 'Pay with Credit Card' : 'Pagar com Cartão de Crédito'}
+                  </button>
                   <div className="flex items-center justify-center gap-2 mt-2">
                     <img src="/stripe-logo.svg" alt="Stripe" className="h-5" onError={(e) => {
                       e.currentTarget.style.display = 'none';
