@@ -1,0 +1,136 @@
+Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+content-script.js:104442 current location https://e8653f10-c406-497b-b5ef-a63c1d1ac5c5-00-2yur1p679km1l.spock.replit.dev/
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+useFormInitialization.ts:10 ContactForm - current formId: null
+useFormInitialization.ts:11 ContactForm - stored formId: null
+@radix-ui_react-dialog.js?v=32581680:1395 `DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
+
+If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/dialog
+(anonymous) @ @radix-ui_react-dialog.js?v=32581680:1395
+commitHookEffectListMount @ chunk-FJ2A54M7.js?v=32581680:16915
+commitPassiveMountOnFiber @ chunk-FJ2A54M7.js?v=32581680:18156
+commitPassiveMountEffects_complete @ chunk-FJ2A54M7.js?v=32581680:18129
+commitPassiveMountEffects_begin @ chunk-FJ2A54M7.js?v=32581680:18119
+commitPassiveMountEffects @ chunk-FJ2A54M7.js?v=32581680:18109
+flushPassiveEffectsImpl @ chunk-FJ2A54M7.js?v=32581680:19490
+flushPassiveEffects @ chunk-FJ2A54M7.js?v=32581680:19447
+commitRootImpl @ chunk-FJ2A54M7.js?v=32581680:19416
+commitRoot @ chunk-FJ2A54M7.js?v=32581680:19277
+performSyncWorkOnRoot @ chunk-FJ2A54M7.js?v=32581680:18895
+flushSyncCallbacks @ chunk-FJ2A54M7.js?v=32581680:9119
+(anonymous) @ chunk-FJ2A54M7.js?v=32581680:18627Understand this errorAI
+@radix-ui_react-dialog.js?v=32581680:1409 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+(anonymous) @ @radix-ui_react-dialog.js?v=32581680:1409
+commitHookEffectListMount @ chunk-FJ2A54M7.js?v=32581680:16915
+commitPassiveMountOnFiber @ chunk-FJ2A54M7.js?v=32581680:18156
+commitPassiveMountEffects_complete @ chunk-FJ2A54M7.js?v=32581680:18129
+commitPassiveMountEffects_begin @ chunk-FJ2A54M7.js?v=32581680:18119
+commitPassiveMountEffects @ chunk-FJ2A54M7.js?v=32581680:18109
+flushPassiveEffectsImpl @ chunk-FJ2A54M7.js?v=32581680:19490
+flushPassiveEffects @ chunk-FJ2A54M7.js?v=32581680:19447
+commitRootImpl @ chunk-FJ2A54M7.js?v=32581680:19416
+commitRoot @ chunk-FJ2A54M7.js?v=32581680:19277
+performSyncWorkOnRoot @ chunk-FJ2A54M7.js?v=32581680:18895
+flushSyncCallbacks @ chunk-FJ2A54M7.js?v=32581680:9119
+(anonymous) @ chunk-FJ2A54M7.js?v=32581680:18627Understand this warningAI
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormNav.tsx:27 Next button clicked for step: 1
+useFormNavigation.ts:11 Moving to next step: 1 -> 2
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormNav.tsx:27 Next button clicked for step: 2
+useFormNavigation.ts:11 Moving to next step: 2 -> 3
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+FormNav.tsx:27 Next button clicked for step: 3
+useFormNavigation.ts:11 Moving to next step: 3 -> 4
+FormContentContainer.tsx:55 FormContentContainer - using formId: 
+FormContentContainer.tsx:56 FormContentContainer - sources: {fromProps: null, fromHook: null, fromStorage: null}
+CartCheckout.tsx:69 Preço do plano: {plan: 'annual', monthly: 89.9, annual: 598.8, monthlyInAnnual: 49.9, totalPrice: 598.8, …}
+CartCheckout.tsx:70 Form ID for payment: 
+StripePaymentButton.tsx:103 Selected plan: annual
+StripePaymentButton.tsx:104 Using domain: main
+StripePaymentButton.tsx:105 Checkout URL: https://buy.stripe.com/5kA6qR8pj55dgq46oo
+StripePaymentButton.tsx:106 Form ID for payment: 

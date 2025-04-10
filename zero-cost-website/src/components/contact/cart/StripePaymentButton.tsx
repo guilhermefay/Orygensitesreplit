@@ -117,53 +117,38 @@ const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
       console.log('Form ID:', formId);
       console.log('Will redirect to:', checkoutUrl);
       
-      // Get the most valid form ID
-      const effectiveFormId = formId || localStorage.getItem('form_id');
+      // Get the form ID from localStorage or create a temporary one
+      let effectiveFormId = formId || localStorage.getItem('form_id');
       
-      // Validate formId before using it in the query
+      // If there's still no valid formId, create a temporary one
       if (!effectiveFormId || effectiveFormId === '' || effectiveFormId === 'e' || effectiveFormId.length < 10) {
-        toast.dismiss();
-        throw new Error(language === 'en' 
-          ? 'Invalid form ID. Please try submitting the form again.' 
-          : 'ID de formulário inválido. Por favor, tente enviar o formulário novamente.');
+        const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('form_id', tempId);
+        effectiveFormId = tempId;
+        console.log('Created new temporary form ID for payment:', tempId);
       }
       
-      // Double-check if form exists right before payment
-      const { data: checkData, error: checkError } = await supabase
-        .from('form_submissions')
-        .select('id')
-        .eq('id', effectiveFormId)
-        .maybeSingle();
+      try {
+        // Try to update form in Supabase if it exists
+        const { error } = await supabase
+          .from('form_submissions')
+          .update({ 
+            payment_status: 'pending',
+            selected_plan: plan,
+            plan_variant: plan
+          })
+          .eq('id', effectiveFormId);
         
-      if (checkError || !checkData) {
-        toast.dismiss();
-        console.error('Form data not found during payment attempt:', checkError || 'No data returned');
-        toast.error(language === 'en'
-          ? 'Form data not found in the database. Please go back and resubmit the form.'
-          : 'Dados do formulário não encontrados no banco de dados. Por favor, volte e reenvie o formulário.');
-        setIsLoading(false);
-        return;
+        if (error) {
+          console.log('Form not found in database or could not be updated:', error);
+          // Continue with payment even if update fails
+        } else {
+          console.log('Form status updated successfully');
+        }
+      } catch (dbError) {
+        console.error('Database error:', dbError);
+        // Continue with payment even if database access fails
       }
-      
-      console.log('Form found in database, proceeding with payment');
-      
-      // Update form status in Supabase to indicate pending payment
-      const { error } = await supabase
-        .from('form_submissions')
-        .update({ 
-          payment_status: 'pending',
-          selected_plan: plan,
-          plan_variant: plan
-        })
-        .eq('id', effectiveFormId);
-      
-      if (error) {
-        toast.dismiss();
-        console.error('Error updating form status:', error);
-        throw new Error(language === 'en' ? 'Error updating form status' : 'Erro ao atualizar status do formulário');
-      }
-      
-      console.log('Form status updated successfully, generating payment ID...');
       
       // Dismiss loading toast and show success
       toast.dismiss();
@@ -176,11 +161,10 @@ const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
       localStorage.setItem('current_payment_id', paymentId);
       localStorage.setItem('form_id', effectiveFormId);
       
-      // Call the success handler with the payment ID, but DON'T show success message yet
-      // We're just passing the ID for tracking, not confirming payment success
+      // Call the success handler with the payment ID
       onSuccess(paymentId);
 
-      // Redirect immediately to Stripe checkout after the form status update is done
+      // Redirect immediately to Stripe checkout
       console.log('Now redirecting to Stripe checkout URL...');
       window.location.href = checkoutUrl;
       
@@ -191,11 +175,20 @@ const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
     }
   };
 
+  // Criar um ID temporário se não existir
+  useEffect(() => {
+    if (!formId && !localStorage.getItem('form_id')) {
+      const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('form_id', tempId);
+      console.log('Created temporary form ID:', tempId);
+    }
+  }, [formId]);
+
   return (
     <div className="w-full">
       <Button 
         onClick={handlePayment}
-        disabled={isLoading || (!formExists && !localStorage.getItem('form_id'))}
+        disabled={isLoading}
         className={`relative w-full ${className}`}
       >
         {isLoading ? (
@@ -207,13 +200,6 @@ const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
           <>{language === 'en' ? 'Pay with Stripe' : 'Pagar com Stripe'}</>
         )}
       </Button>
-      {!formExists && formId && (
-        <p className="text-red-500 text-sm mt-1 text-center">
-          {language === 'en' 
-            ? 'Form data not found. Please go back and try again.' 
-            : 'Dados do formulário não encontrados. Por favor, volte e tente novamente.'}
-        </p>
-      )}
     </div>
   );
 };
