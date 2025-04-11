@@ -55,6 +55,45 @@ setupStripeRedirect(app);
 // Manter a rota API antiga para compatibilidade
 setupCreatePaymentIntent(app);
 
+// Registrar todas as rotas de API principais
+app.use('/api/checkout-direct', require('./api/checkout-direct'));
+app.use('/api/process-payment-success', require('./api/process-payment-success'));
+app.use('/api/store-form-data', require('./api/store-form-data'));
+console.log('✅ Todas as rotas de API registradas corretamente');
+
+// Adicionar mais logging para depuração
+app.get('/api/debug-session', (req, res) => {
+  const { sessionId } = req.query;
+  console.log('[DEBUG] Verificando sessão:', sessionId);
+  if (!sessionId) {
+    return res.status(400).json({ error: 'sessionId é obrigatório' });
+  }
+  
+  // Retornar o status da sessão para diagnóstico
+  if (process.env.STRIPE_SECRET_KEY) {
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    stripe.checkout.sessions.retrieve(sessionId)
+      .then(session => {
+        console.log('[DEBUG] Sessão encontrada:', {
+          id: session.id,
+          status: session.status,
+          payment_status: session.payment_status
+        });
+        res.json({ success: true, session: {
+          id: session.id,
+          status: session.status,
+          payment_status: session.payment_status
+        }});
+      })
+      .catch(err => {
+        console.error('[DEBUG] Erro ao buscar sessão:', err);
+        res.status(500).json({ error: 'Erro ao buscar sessão', message: err.message });
+      });
+  } else {
+    res.status(500).json({ error: 'STRIPE_SECRET_KEY não configurada' });
+  }
+});
+
 // Rota de diagnóstico para verificar configuração
 app.get('/api/diagnostics', (req, res) => {
   res.json({

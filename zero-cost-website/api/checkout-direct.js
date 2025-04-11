@@ -50,9 +50,29 @@ module.exports = async (req, res) => {
         ? 'http://localhost:5000' 
         : `https://${req.headers.host}`;
         
-      // success_url deve apontar para nossa página de sucesso e incluir formId e sessionId como parâmetros
-      redirectUrl += `&success_url=${encodeURIComponent(`${baseUrl}/api/process-payment-success?formId=${formId}&plan=${plan || 'monthly'}`)}`;
-      redirectUrl += `&cancel_url=${encodeURIComponent(`${baseUrl}/?canceled=true`)}`;
+      console.log('[CHECKOUT DIRECT] Host detectado:', req.headers.host);
+      console.log('[CHECKOUT DIRECT] URL base:', baseUrl);
+      
+      // Verificar se está sendo usado um domínio personalizado
+      const isCustomDomain = !req.headers.host.includes('replit') && !req.headers.host.includes('localhost');
+      
+      // Para domínios personalizados, usar uma abordagem diferente para os callbacks
+      if (isCustomDomain) {
+        console.log('[CHECKOUT DIRECT] Domínio personalizado detectado:', req.headers.host);
+        console.log('[CHECKOUT DIRECT] Usando URLs de callback especiais para domínio personalizado');
+        
+        // Ajustar o formato da URL de sucesso para o domínio personalizado
+        redirectUrl += `&success_url=${encodeURIComponent(`${baseUrl}/success?formId=${formId}&sessionId={CHECKOUT_SESSION_ID}&plan=${plan || 'monthly'}`)}`;
+        redirectUrl += `&cancel_url=${encodeURIComponent(`${baseUrl}/?canceled=true`)}`;
+        
+        // Salvar no localStorage para persistência temporária (tentativa de manter referência)
+        console.log('[CHECKOUT DIRECT] Usando estratégia de domínio personalizado');
+      } else {
+        // Para domínios padrão, usar o callback de processamento
+        console.log('[CHECKOUT DIRECT] Usando abordagem padrão para callbacks');
+        redirectUrl += `&success_url=${encodeURIComponent(`${baseUrl}/api/process-payment-success?formId=${formId}&plan=${plan || 'monthly'}`)}`;
+        redirectUrl += `&cancel_url=${encodeURIComponent(`${baseUrl}/?canceled=true`)}`;
+      }
     }
     
     console.log(`[STRIPE DIRECT] Redirecionando para: ${redirectUrl} (${plan}, variant2: ${isVariant2})`);

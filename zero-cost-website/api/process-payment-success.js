@@ -30,6 +30,17 @@ module.exports = async (req, res) => {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
+  
+  // Registrar todas as informações da requisição para diagnósticos
+  console.log('[PAYMENT_SUCCESS_DEBUG] Requisição completa:', {
+    headers: req.headers,
+    query: req.query,
+    url: req.url,
+    method: req.method,
+    path: req.path,
+    hostname: req.hostname || 'não definido',
+    originalUrl: req.originalUrl
+  });
 
   try {
     console.log("[PAYMENT PROCESS] Query recebida:", req.query);
