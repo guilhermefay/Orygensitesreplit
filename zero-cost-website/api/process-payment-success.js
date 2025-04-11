@@ -68,6 +68,11 @@ module.exports = async (req, res) => {
           
           // Salvar no Supabase
           try {
+            console.log('[SUPABASE DEBUG] Tentando salvar dados:', JSON.stringify(submissionData));
+            console.log('[SUPABASE DEBUG] URL Supabase:', process.env.SUPABASE_URL);
+            console.log('[SUPABASE DEBUG] Comprimento da chave:', process.env.SUPABASE_KEY ? process.env.SUPABASE_KEY.length : 'não definida');
+            console.log('[SUPABASE DEBUG] Tabela alvo:', 'form_submissions');
+            
             const { data, error } = await supabaseClient
               .from('form_submissions')
               .upsert(submissionData, { onConflict: 'id' });
@@ -75,10 +80,11 @@ module.exports = async (req, res) => {
             if (error) {
               console.error('[PAYMENT SUCCESS] Erro ao salvar no Supabase:', error);
             } else {
-              console.log('[PAYMENT SUCCESS] Dados salvos com sucesso no Supabase');
+              console.log('[PAYMENT SUCCESS] Dados salvos com sucesso no Supabase:', data);
             }
           } catch (supabaseError) {
             console.error('[PAYMENT SUCCESS] Exceção ao salvar no Supabase:', supabaseError);
+            console.error('[PAYMENT SUCCESS] Detalhes do erro:', supabaseError.message);
           }
           
           // Limpar dados temporários
@@ -106,17 +112,20 @@ module.exports = async (req, res) => {
           
           // Tentar salvar dados mínimos
           try {
-            const { error } = await supabaseClient
+            console.log('[SUPABASE DEBUG MINIMALDATA] Tentando salvar dados mínimos:', JSON.stringify(minimalData));
+            
+            const { data, error } = await supabaseClient
               .from('form_submissions')
               .upsert(minimalData, { onConflict: 'id' });
               
             if (error) {
               console.error('[PAYMENT SUCCESS] Erro ao salvar dados mínimos:', error);
             } else {
-              console.log('[PAYMENT SUCCESS] Dados mínimos salvos com sucesso');
+              console.log('[PAYMENT SUCCESS] Dados mínimos salvos com sucesso:', data);
             }
           } catch (supabaseError) {
             console.error('[PAYMENT SUCCESS] Exceção ao salvar dados mínimos:', supabaseError);
+            console.error('[PAYMENT SUCCESS] Detalhes do erro mínimo:', supabaseError.message);
           }
         } catch (minError) {
           console.error('[PAYMENT SUCCESS] Erro ao processar dados mínimos:', minError);
