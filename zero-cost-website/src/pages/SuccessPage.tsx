@@ -22,6 +22,15 @@ const SuccessPage: React.FC = () => {
   const queryParams = new URLSearchParams(location.search);
   const sessionId = queryParams.get('sessionId');
   const plan = queryParams.get('plan');
+  const formId = queryParams.get('formId');
+  
+  // Log de todos os parâmetros recebidos
+  console.log('SuccessPage - Parâmetros da URL:', { 
+    sessionId, 
+    plan, 
+    formId, 
+    fullSearch: location.search 
+  });
 
   // Efeito para atualizar o tamanho da janela (para o confetti)
   useEffect(() => {
@@ -51,25 +60,41 @@ const SuccessPage: React.FC = () => {
       pathname: location.pathname,
       search: location.search,
       sessionId,
-      plan
+      plan,
+      formId
     });
     
-    // NOVA ABORDAGEM: Buscar dados diretamente do Supabase pelo payment_id (sessionId)
+    // NOVA ABORDAGEM: Buscar dados diretamente do Supabase pelo payment_id (sessionId) ou formId
     const fetchPaymentDetails = async () => {
-      if (!sessionId) {
-        console.log('SuccessPage - Sem sessionId, mostrando página de sucesso genérica');
+      // Tentar usar sessionId ou formId, um dos dois deve estar presente
+      if (!sessionId && !formId) {
+        console.log('SuccessPage - Sem sessionId ou formId, mostrando página de sucesso genérica');
         setIsProcessing(false);
         return;
       }
       
       try {
-        console.log('SuccessPage - Buscando detalhes de pagamento para sessionId:', sessionId);
+        // Estratégia de busca por múltiplos critérios
+        if (sessionId) {
+          console.log('SuccessPage - Buscando detalhes de pagamento para sessionId:', sessionId);
+        } else if (formId) {
+          console.log('SuccessPage - Buscando detalhes de pagamento para formId:', formId);
+        }
         
-        // Buscar registro pelo payment_id (que é o sessionId)
-        const { data, error } = await supabase
+        // Determinar qual critério usar para busca
+        let query = supabase
           .from('form_submissions')
-          .select('*')
-          .eq('payment_id', sessionId);
+          .select('*');
+          
+        if (sessionId) {
+          // Primeiro tentar pelo payment_id (que é o sessionId)
+          query = query.eq('payment_id', sessionId);
+        } else if (formId) {
+          // Caso contrário, tentar pelo original_form_id
+          query = query.eq('original_form_id', formId);
+        }
+        
+        const { data, error } = await query;
           
         if (error) {
           console.error('Erro ao buscar detalhes do pagamento:', error);
@@ -89,24 +114,61 @@ const SuccessPage: React.FC = () => {
             : 'Informações do pagamento recuperadas com sucesso!');
         } else {
           // Buscar por original_form_id no caso de outro formato de ID
-          console.log('SuccessPage - Tentando buscar por originalFormId no sessionId');
+          // Se temos formId, mas já tentamos por ele e não encontramos, não precisamos tentar de novo
+          const idToTry = sessionId || (formId ? null : formId);
           
-          const { data: secondaryData, error: secondaryError } = await supabase
-            .from('form_submissions')
-            .select('*')
-            .eq('original_form_id', sessionId);
-            
-          if (secondaryError) {
-            console.error('Erro na busca secundária:', secondaryError);
-          } else if (secondaryData && secondaryData.length > 0) {
-            const secondaryPayment = secondaryData[0];
-            setBusinessName(secondaryPayment.business);
-            
-            toast.success(language === 'en'
-              ? 'Payment information found through alternative method!'
-              : 'Informações do pagamento encontradas por método alternativo!');
-          } else {
-            console.log('SuccessPage - Nenhum registro encontrado com este sessionId ou formId');
+          if (idToTry) {
+            console.log('SuccessPage - Tentando busca secundária por ID:', idToTry);
+          
+            const { data: secondaryData, error: secondaryError } = await supabase
+              .from('form_submissions')
+              .select('*')
+              .eq('id', idToTry);
+          
+            if (secondaryError) {
+              console.error('Erro na busca secundária:', secondaryError);
+            } else if (secondaryData && secondaryData.length > 0) {
+              const secondaryPayment = secondaryData[0];
+              setBusinessName(secondaryPayment.business);
+              
+              toast.success(language === 'en'
+                ? 'Payment information found through alternative method!'
+                : 'Informações do pagamento encontradas por método alternativo!');
+              return;  // Sair da função se encontrou
+            }
+          }
+          
+          // Última tentativa: buscar qualquer pagamento recente
+          console.log('SuccessPage - Tentativa final: buscar pagamento recente');
+          
+          try {
+            // Buscar o pagamento mais recente (limitando a 1)
+            const { data: recentPayment, error: recentError } = await supabase
+              .from('form_submissions')
+              .select('*')
+              .order('created_at', { ascending: false })
+              .limit(1);
+              
+            if (recentError) {
+              console.error('Erro ao buscar pagamento recente:', recentError);
+            } else if (recentPayment && recentPayment.length > 0) {
+              console.log('SuccessPage - Encontrou pagamento recente:', recentPayment[0]);
+              setBusinessName(recentPayment[0].business);
+              
+              toast.success(language === 'en'
+                ? 'We found a recent payment in our records!'
+                : 'Encontramos um pagamento recente em nossos registros!');
+            } else {
+              console.log('SuccessPage - Nenhum registro encontrado em nenhuma tentativa');
+              toast.error(language === 'en'
+                ? 'We could not find your payment information, but your payment was successful. We will contact you soon.'
+                : 'Não conseguimos encontrar suas informações de pagamento, mas seu pagamento foi bem-sucedido. Entraremos em contato em breve.');
+            }
+          } catch (finalError) {
+            console.error('Erro na tentativa final de busca:', finalError);
+            toast.error(language === 'en'
+              ? 'We could not find your payment information, but your payment was successful. We will contact you soon.'
+              : 'Não conseguimos encontrar suas informações de pagamento, mas seu pagamento foi bem-sucedido. Entraremos em contato em breve.');
           }
         }
       } catch (error) {
@@ -117,7 +179,7 @@ const SuccessPage: React.FC = () => {
     };
     
     fetchPaymentDetails();
-  }, [language, sessionId, plan]);
+  }, [language, sessionId, plan, formId]);
 
   const handleGoHome = () => {
     navigate('/');

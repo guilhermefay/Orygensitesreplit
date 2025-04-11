@@ -169,8 +169,8 @@ module.exports = async (req, res) => {
         console.error('[SUPABASE UPDATE] Erro ao processar atualização:', dbError);
       }
       
-      // Redirecionar para página de sucesso com confetes
-      return res.redirect(`/success?plan=${plan}&sessionId=${sessionId}`);
+      // Redirecionar para página de sucesso com confetes e incluir todos os parâmetros importantes
+      return res.redirect(`/success?plan=${plan}&sessionId=${sessionId}&formId=${formId}`);
     } else {
       console.log(`[PAYMENT SUCCESS] Pagamento não confirmado: ${session.payment_status}`);
       return res.redirect('/?success=false');
