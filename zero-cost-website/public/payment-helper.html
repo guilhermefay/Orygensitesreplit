@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orygensites - Ajudante de Pagamento</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+      padding: 20px;
+    }
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #2c5282;
+    }
+    .help-section {
+      margin-bottom: 25px;
+      padding-bottom: 25px;
+      border-bottom: 1px solid #eee;
+    }
+    .help-section:last-child {
+      border-bottom: none;
+    }
+    h2 {
+      color: #3182ce;
+      margin-bottom: 15px;
+    }
+    p {
+      margin-bottom: 15px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    button {
+      background-color: #4299e1;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      display: inline-block;
+    }
+    button:hover {
+      background-color: #3182ce;
+    }
+    code {
+      background-color: #f7fafc;
+      padding: 3px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 0.9em;
+    }
+    .result {
+      margin-top: 15px;
+      padding: 15px;
+      background-color: #f7fafc;
+      border-radius: 4px;
+      border-left: 4px solid #4299e1;
+    }
+    .error {
+      border-left-color: #e53e3e;
+      color: #e53e3e;
+    }
+    .success {
+      border-left-color: #38a169;
+      color: #38a169;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Ajudante de Pagamento - Orygensites</h1>
+    
+    <div class="help-section">
+      <h2>Instruções</h2>
+      <p>Esta ferramenta ajuda a processar manualmente pagamentos pelo Stripe quando o fluxo automático falha. Para usar:</p>
+      <ol style="margin-left: 20px;">
+        <li>Colete o ID da sessão do Stripe (começa com cs_live_)</li>
+        <li>Colete o ID do formulário gerado durante o processo</li>
+        <li>Use o Supabase diretamente para atualizar o status</li>
+      </ol>
+    </div>
+    
+    <div class="help-section">
+      <h2>Atualizar Pagamento Manualmente no Supabase</h2>
+      <p>Passos:</p>
+      <ol style="margin-left: 20px;">
+        <li>Abra <a href="https://app.supabase.com/project/gltluwhobeprwfzzcmzw/editor" target="_blank">Supabase Editor</a></li>
+        <li>Execute o SQL abaixo ajustando os valores conforme necessário:</li>
+      </ol>
+      <textarea id="sqlQuery" rows="10" style="font-family: monospace;">
+-- Verifique se o registro existe
+SELECT * FROM form_submissions
+WHERE payment_id = 'cs_live_SEU_ID_AQUI' 
+   OR original_form_id = 'ID_DO_FORMULARIO_AQUI';
+
+-- Se não existir, insira um novo registro
+INSERT INTO form_submissions (
+  id, 
+  name, 
+  email, 
+  phone, 
+  business, 
+  business_details, 
+  selected_plan, 
+  payment_id, 
+  payment_status, 
+  payment_date
+) VALUES (
+  gen_random_uuid(), 
+  'Nome Completo', 
+  'email@cliente.com',
+  'Telefone Cliente', 
+  'Nome da Empresa', 
+  'Detalhes do Negócio', 
+  'monthly', 
+  'cs_live_SEU_ID_AQUI', 
+  'paid', 
+  now()
+);
+
+-- OU se já existir, atualize o status
+UPDATE form_submissions
+SET 
+  payment_status = 'paid',
+  payment_date = now(),
+  payment_id = 'cs_live_SEU_ID_AQUI'
+WHERE original_form_id = 'ID_DO_FORMULARIO_AQUI';
+      </textarea>
+      <button id="copySQL">Copiar SQL</button>
+      <p id="sqlResult" class="result" style="display: none;"></p>
+    </div>
+    
+    <div class="help-section">
+      <h2>Verificar Sessão do Stripe</h2>
+      <p>Para recuperar detalhes de uma sessão do Stripe, use o terminal:</p>
+      <code>stripe payment_intents retrieve PAYMENT_INTENT_ID</code>
+      <p>Ou use o <a href="https://dashboard.stripe.com/payments" target="_blank">Dashboard do Stripe</a> para verificar o status manualmente.</p>
+    </div>
+    
+    <div class="help-section">
+      <h2>Gerar Link de Sucesso Manual</h2>
+      <p>Se precisar gerar uma página de sucesso para o cliente:</p>
+      <div>
+        <input type="text" id="businessName" placeholder="Nome da empresa">
+        <button id="generateLink">Gerar Link</button>
+      </div>
+      <p id="linkResult" class="result" style="display: none;"></p>
+    </div>
+  </div>
+
+  <script>
+    // Copiar SQL
+    document.getElementById('copySQL').addEventListener('click', function() {
+      const sqlQuery = document.getElementById('sqlQuery');
+      sqlQuery.select();
+      document.execCommand('copy');
+      
+      const result = document.getElementById('sqlResult');
+      result.textContent = 'SQL copiado para a área de transferência!';
+      result.className = 'result success';
+      result.style.display = 'block';
+      
+      setTimeout(() => {
+        result.style.display = 'none';
+      }, 3000);
+    });
+    
+    // Gerar link de sucesso
+    document.getElementById('generateLink').addEventListener('click', function() {
+      const businessName = encodeURIComponent(document.getElementById('businessName').value.trim());
+      
+      if (!businessName) {
+        const result = document.getElementById('linkResult');
+        result.textContent = 'Por favor, insira o nome da empresa.';
+        result.className = 'result error';
+        result.style.display = 'block';
+        return;
+      }
+      
+      // Gerar a URL de sucesso
+      const successUrl = `https://orygensites.com/success?business=${businessName}`;
+      
+      const result = document.getElementById('linkResult');
+      result.innerHTML = `<p>URL de sucesso:</p><p><a href="${successUrl}" target="_blank">${successUrl}</a></p>`;
+      result.className = 'result success';
+      result.style.display = 'block';
+    });
+  </script>
+</body>
+</html>

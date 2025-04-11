@@ -23,12 +23,14 @@ const SuccessPage: React.FC = () => {
   const sessionId = queryParams.get('sessionId');
   const plan = queryParams.get('plan');
   const formId = queryParams.get('formId');
+  const businessParam = queryParams.get('business');
   
   // Log de todos os parâmetros recebidos
   console.log('SuccessPage - Parâmetros da URL:', { 
     sessionId, 
     plan, 
     formId, 
+    business: businessParam,
     fullSearch: location.search 
   });
 
@@ -66,6 +68,15 @@ const SuccessPage: React.FC = () => {
     
     // NOVA ABORDAGEM: Buscar dados diretamente do Supabase pelo payment_id (sessionId) ou formId
     const fetchPaymentDetails = async () => {
+      // MÉTODO DIRETO: Se temos o nome da empresa diretamente na URL (para casos de emergência/fallback)
+      if (businessParam) {
+        console.log('SuccessPage - Nome da empresa encontrado diretamente na URL:', businessParam);
+        setBusinessName(decodeURIComponent(businessParam));
+        setShowConfetti(true);
+        setIsProcessing(false);
+        return;
+      }
+      
       // Tentar usar sessionId ou formId, um dos dois deve estar presente
       if (!sessionId && !formId) {
         console.log('SuccessPage - Sem sessionId ou formId, mostrando página de sucesso genérica');
@@ -219,7 +230,7 @@ const SuccessPage: React.FC = () => {
     };
     
     fetchPaymentDetails();
-  }, [language, sessionId, plan, formId]);
+  }, [language, sessionId, plan, formId, businessParam]);
 
   const handleGoHome = () => {
     navigate('/');
