@@ -53,14 +53,19 @@ module.exports = async (req, res) => {
           const { formData } = storedData;
           const isTestPayment = test === 'true';
           
-          // Preparar dados para Supabase (adaptados para a estrutura da tabela existente)
+          // Função para gerar UUID válido
+          function uuidv4() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+              var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+              return v.toString(16);
+            });
+          }
+          
+          // Preparar dados para Supabase (apenas campos básicos com UUID válido)
           const submissionData = {
-            id: formId,
+            id: uuidv4(), // Usar UUID em vez do formId
             name: formData.name || 'Sem nome',
-            email: formData.email || 'sem@email.com',
-            business_name: formData.business || '',
-            stripe_session_id: sessionId,
-            created_at: new Date().toISOString()
+            email: formData.email || 'sem@email.com'
           };
           
           // Salvar no Supabase
@@ -96,13 +101,11 @@ module.exports = async (req, res) => {
         try {
           const isTestPayment = test === 'true';
           
+          // Reuse function uuidv4 from above
           const minimalData = {
-            id: formId, 
-            stripe_session_id: sessionId,
-            created_at: new Date().toISOString(),
+            id: uuidv4(), // Usando UUID para garantir compatibilidade
             name: 'Pagamento sem dados', 
-            email: 'pagamento@semformulario.com',
-            business_name: 'Pagamento direto'
+            email: 'pagamento@semformulario.com'
           };
           
           // Tentar salvar dados mínimos

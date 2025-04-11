@@ -20,14 +20,19 @@ module.exports = async (req, res) => {
   try {
     console.log('[SUPABASE TEST] Iniciando teste de inserção');
 
-    // Dados de teste - simplificados para corresponder à estrutura da tabela
+    // Gerar um UUID válido para o ID
+    function uuidv4() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+    
+    // Dados de teste com UUID válido
     const testData = {
-      id: `test-${Date.now()}`, 
+      id: uuidv4(), 
       name: 'Teste Supabase',
-      email: 'teste@supabase.com',
-      business_name: 'Empresa de Teste',
-      stripe_session_id: `test-payment-${Date.now()}`,
-      created_at: new Date().toISOString()
+      email: 'teste@supabase.com'
     };
 
     console.log('[SUPABASE TEST] Dados a inserir:', JSON.stringify(testData));
