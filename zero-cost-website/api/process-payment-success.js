@@ -6,8 +6,12 @@ const { formDataStorage } = require('./store-form-data');
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Configurar cliente Supabase
-const supabaseUrl = process.env.SUPABASE_URL || 'https://eyzywpxlcyjnwbbxjwwg.supabase.co';
-const supabaseKey = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5enl3cHhsY3lqbndpYnhqd3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTIyODU3NzMsImV4cCI6MjAyNzg2MTc3M30.7RcDyuDgQQzTx8X3sSOTzQKRcg9Dp2S3sLVYEW79X0I';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+
+// Log para depuração
+console.log(`[SUPABASE CONFIG] URL configurada: ${supabaseUrl ? 'Sim' : 'Não'}`);
+console.log(`[SUPABASE CONFIG] Key configurada: ${supabaseKey ? 'Sim' : 'Não'}`);
 const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
 module.exports = async (req, res) => {
@@ -127,8 +131,8 @@ module.exports = async (req, res) => {
         }
       }
       
-      // Redirecionar para página de sucesso
-      return res.redirect(`/?success=true&plan=${plan}&sessionId=${sessionId}`);
+      // Redirecionar para página de sucesso com confetes
+      return res.redirect(`/success?plan=${plan}&sessionId=${sessionId}`);
     } else {
       console.log(`[PAYMENT SUCCESS] Pagamento não confirmado: ${session.payment_status}`);
       return res.redirect('/?success=false');
