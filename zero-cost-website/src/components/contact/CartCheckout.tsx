@@ -163,20 +163,16 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                         
                         if (useDirectLinks) {
                           // Redirecionar para URL direta (links do Stripe fornecidos)
-                          // Compatível com Vercel
-                          const apiPath = process.env.NODE_ENV === 'production' 
-                            ? '/api/checkout/direct' 
-                            : '/api/checkout-direct';
+                          // Usar sempre o mesmo caminho para checkout-direct
+                          const apiPath = '/api/checkout-direct';
                             
                           const redirectUrl = `${apiPath}?plan=${selectedPlan}&formId=${effectiveFormId}${isVariant2 ? '&variant=variant2' : ''}`;
                           console.log(`Redirecionando para URL direta: ${redirectUrl}`);
                           window.location.href = redirectUrl;
                         } else {
                           // Redirecionar para a criação de sessão
-                          // Compatível com Vercel
-                          const apiPath = process.env.NODE_ENV === 'production' 
-                            ? '/api/checkout/redirect'
-                            : '/api/checkout-redirect';
+                          // Usar sempre o mesmo caminho para checkout-redirect
+                          const apiPath = '/api/checkout-redirect';
                             
                           const redirectUrl = `${apiPath}?amount=${amountInCents}&currency=brl&plan=${selectedPlan}&formId=${effectiveFormId}`;
                           console.log(`Redirecionando para criar sessão: ${redirectUrl}`);
