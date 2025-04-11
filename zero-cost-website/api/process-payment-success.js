@@ -1,6 +1,6 @@
 const Stripe = require('stripe');
 const { createClient } = require('@supabase/supabase-js');
-const { formDataStorage } = require('./store-form-data');
+const { formDataStorage } = require('./shared-storage');
 
 // Inicializar o Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -32,9 +32,13 @@ module.exports = async (req, res) => {
   }
 
   try {
+    console.log("[PAYMENT PROCESS] Query recebida:", req.query);
     const { sessionId, formId, plan, test } = req.query;
     
+    console.log(`[PAYMENT PROCESS] Parâmetros: sessionId=${sessionId}, formId=${formId}, plan=${plan}, test=${test}`);
+    
     if (!sessionId || !formId) {
+      console.log("[PAYMENT PROCESS] ERRO: sessionId ou formId ausentes");
       return res.status(400).json({ error: 'sessionId e formId são obrigatórios' });
     }
     
@@ -45,7 +49,11 @@ module.exports = async (req, res) => {
       console.log(`[PAYMENT SUCCESS] Pagamento confirmado para a sessão ${sessionId}`);
       
       // Verificar dados armazenados
+      console.log("[FORM DATA] Conteúdo do armazenamento:", Object.keys(formDataStorage));
+      console.log(`[FORM DATA] Procurando pelo formId: ${formId}`);
+      
       if (formDataStorage[formId]) {
+        console.log(`[FORM DATA] Dados encontrados para formId: ${formId}`);
         const storedData = formDataStorage[formId];
         
         try {

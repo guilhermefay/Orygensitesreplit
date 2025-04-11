@@ -1,8 +1,5 @@
-// Armazenamento temporário de dados (em produção, usaria Redis ou Firestore)
-let formDataStorage = {};
-
-// Expor o armazenamento para que outros módulos possam acessá-lo
-module.exports.formDataStorage = formDataStorage;
+// Importar armazenamento compartilhado
+const { formDataStorage } = require('./shared-storage');
 
 module.exports = async (req, res) => {
   // Habilitar CORS
