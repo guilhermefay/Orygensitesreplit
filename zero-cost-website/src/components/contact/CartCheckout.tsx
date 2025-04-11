@@ -130,10 +130,8 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                         // Configurar identificador único para o formulário se não existir
                         const effectiveFormId = formId || `temp_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
                         
-                        // Enviar os dados para armazenamento temporário (compatível com Vercel)
-                        const storeUrl = process.env.NODE_ENV === 'production' 
-                          ? '/api/checkout/store-form-data' 
-                          : '/api/store-form-data';
+                        // Sempre usar o mesmo caminho para store-form-data
+                        const storeUrl = '/api/store-form-data';
                           
                         const storeResponse = await fetch(storeUrl, {
                           method: 'POST',
