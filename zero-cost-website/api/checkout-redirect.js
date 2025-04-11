@@ -42,10 +42,29 @@ module.exports = async (req, res) => {
     const host = req.headers.host || 'localhost:3000';
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
     
-    // Atualizado para usar a rota /api/process-payment-success
-    const successUrl = `${protocol}://${host}/api/process-payment-success?sessionId={CHECKOUT_SESSION_ID}&formId=${formId}&plan=${plan}${test ? '&test=true' : ''}`;
-    // Mantém a página de cancelamento original
-    const cancelUrl = `${protocol}://${host}?success=false`;
+    // Verificar se está sendo usado um domínio personalizado
+    const isCustomDomain = !host.includes('replit') && !host.includes('localhost');
+    
+    console.log('[CHECKOUT REDIRECT] Host detectado:', host);
+    console.log('[CHECKOUT REDIRECT] Protocolo:', protocol);
+    
+    let successUrl, cancelUrl;
+    
+    if (isCustomDomain) {
+      console.log('[CHECKOUT REDIRECT] Domínio personalizado detectado:', host);
+      console.log('[CHECKOUT REDIRECT] Usando URLs especiais para domínio personalizado');
+      
+      // Para domínios personalizados, redirecionar diretamente para a página de sucesso
+      successUrl = `${protocol}://${host}/success?sessionId={CHECKOUT_SESSION_ID}&formId=${formId}&plan=${plan}${test ? '&test=true' : ''}`;
+      cancelUrl = `${protocol}://${host}?success=false`;
+    } else {
+      // Abordagem padrão para domínios Replit
+      console.log('[CHECKOUT REDIRECT] Usando abordagem padrão para callbacks');
+      successUrl = `${protocol}://${host}/api/process-payment-success?sessionId={CHECKOUT_SESSION_ID}&formId=${formId}&plan=${plan}${test ? '&test=true' : ''}`;
+      cancelUrl = `${protocol}://${host}?success=false`;
+    }
+    
+    console.log('[CHECKOUT REDIRECT] Success URL:', successUrl);
     
     // Criar sessão
     const session = await stripe.checkout.sessions.create({
