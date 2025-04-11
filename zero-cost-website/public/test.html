@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teste de Integração - Orygen Sites</title>
+  <style>
+    body { 
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.5;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      color: #333;
+    }
+    h1 { color: #1a202c; margin-bottom: 30px; }
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    button {
+      background-color: #4299e1;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover { background-color: #3182ce; }
+    pre {
+      background-color: #f7fafc;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    .success { color: #38a169; }
+    .error { color: #e53e3e; }
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #cbd5e0;
+      border-radius: 4px;
+    }
+    label { 
+      display: block; 
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <h1>Teste de Integração do Sistema</h1>
+  
+  <div class="card">
+    <h2>Verificação de Status</h2>
+    <p>Verifica se todos os sistemas estão funcionando corretamente.</p>
+    <button id="checkStatus">Verificar Status</button>
+    <div id="statusResult" style="margin-top: 15px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Testar Conexão Supabase</h2>
+    <button id="testSupabaseConnection">Testar Conexão</button>
+    <div id="supabaseResult" style="margin-top: 15px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Testar Stripe</h2>
+    <div>
+      <label for="sessionId">ID da Sessão do Stripe:</label>
+      <input type="text" id="sessionId" placeholder="cs_live_..." />
+      <button id="checkStripeSession">Verificar Sessão</button>
+    </div>
+    <div id="stripeResult" style="margin-top: 15px;"></div>
+  </div>
+
+  <script>
+    // URL base da API - altere para seu domínio Replit
+    const API_BASE = 'https://zero-cost-website.orygentech.repl.co';
+    
+    // Utilitário para mostrar resultados
+    function showResult(elementId, data, isError = false) {
+      const el = document.getElementById(elementId);
+      let html = '';
+      
+      if (isError) {
+        html = `<p class="error">Erro: ${data}</p>`;
+      } else {
+        html = `<p class="success">Sucesso!</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+      }
+      
+      el.innerHTML = html;
+    }
+
+    // Verificar status do sistema
+    document.getElementById('checkStatus').addEventListener('click', async () => {
+      try {
+        const statusEl = document.getElementById('statusResult');
+        statusEl.innerHTML = '<p>Verificando status...</p>';
+        
+        const response = await fetch(`${API_BASE}/api/diagnostics`);
+        const data = await response.json();
+        
+        showResult('statusResult', data);
+      } catch (error) {
+        showResult('statusResult', error.message, true);
+      }
+    });
+
+    // Testar conexão com o Supabase
+    document.getElementById('testSupabaseConnection').addEventListener('click', async () => {
+      try {
+        const statusEl = document.getElementById('supabaseResult');
+        statusEl.innerHTML = '<p>Testando conexão...</p>';
+        
+        const response = await fetch(`${API_BASE}/api/supabase-test`);
+        const data = await response.json();
+        
+        showResult('supabaseResult', data);
+      } catch (error) {
+        showResult('supabaseResult', error.message, true);
+      }
+    });
+
+    // Verificar sessão do Stripe
+    document.getElementById('checkStripeSession').addEventListener('click', async () => {
+      try {
+        const statusEl = document.getElementById('stripeResult');
+        const sessionId = document.getElementById('sessionId').value;
+        
+        if (!sessionId) {
+          showResult('stripeResult', 'Informe o ID da sessão do Stripe', true);
+          return;
+        }
+        
+        statusEl.innerHTML = '<p>Verificando sessão do Stripe...</p>';
+        
+        const response = await fetch(`${API_BASE}/api/debug-session?sessionId=${sessionId}`);
+        const data = await response.json();
+        
+        showResult('stripeResult', data);
+      } catch (error) {
+        showResult('stripeResult', error.message, true);
+      }
+    });
+  </script>
+</body>
+</html>
