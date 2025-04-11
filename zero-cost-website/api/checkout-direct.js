@@ -36,11 +36,27 @@ module.exports = async (req, res) => {
     
     // Determinar qual link usar
     const isVariant2 = variant === 'variant2';
-    const redirectUrl = isVariant2 
+    let redirectUrl = isVariant2 
       ? (plan === 'monthly' ? stripeLinks.monthlyVariant2 : stripeLinks.annualVariant2)
       : (plan === 'monthly' ? stripeLinks.monthly : stripeLinks.annual);
     
+    // Adicionar parâmetros de customização para o Stripe
+    if (formId) {
+      // Adicionar o formId como parâmetro de cliente
+      redirectUrl += `?client_reference_id=${formId}`;
+      
+      // Adicionar o domínio atual como success_url e cancel_url
+      const baseUrl = req.headers.host.includes('localhost') 
+        ? 'http://localhost:5000' 
+        : `https://${req.headers.host}`;
+        
+      // success_url deve apontar para nossa página de sucesso e incluir formId e sessionId como parâmetros
+      redirectUrl += `&success_url=${encodeURIComponent(`${baseUrl}/api/process-payment-success?formId=${formId}&plan=${plan || 'monthly'}`)}`;
+      redirectUrl += `&cancel_url=${encodeURIComponent(`${baseUrl}/?canceled=true`)}`;
+    }
+    
     console.log(`[STRIPE DIRECT] Redirecionando para: ${redirectUrl} (${plan}, variant2: ${isVariant2})`);
+    console.log(`[STRIPE DIRECT] FormId incluído: ${formId}`);
     
     // Redirecionar para a URL do Stripe
     return res.redirect(303, redirectUrl);

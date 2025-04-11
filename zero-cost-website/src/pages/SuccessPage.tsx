@@ -54,70 +54,69 @@ const SuccessPage: React.FC = () => {
       plan
     });
     
-    // Usar o sessionId da URL se disponível, ou do localStorage caso contrário
-    const formId = localStorage.getItem('form_id');
-    const paymentId = sessionId || localStorage.getItem('current_payment_id');
-    
-    console.log('SuccessPage - Dados do pagamento:', { formId, paymentId });
-    
-    const updatePaymentStatus = async () => {
-      // Se temos paymentId da URL mas não temos formId, ainda assim mostramos sucesso
-      if (!formId && !paymentId) {
-        console.log('SuccessPage - Sem formId ou paymentId, mostrando página de sucesso genérica');
+    // NOVA ABORDAGEM: Buscar dados diretamente do Supabase pelo payment_id (sessionId)
+    const fetchPaymentDetails = async () => {
+      if (!sessionId) {
+        console.log('SuccessPage - Sem sessionId, mostrando página de sucesso genérica');
         setIsProcessing(false);
         return;
       }
       
       try {
-        if (formId) {
-          // Fetch form details to get business name
-          const { data: formData, error: fetchError } = await supabase
-            .from('form_submissions')
-            .select('business')
-            .eq('id', formId)
-            .single();
-            
-          if (formData && formData.business) {
-            setBusinessName(formData.business);
-          }
+        console.log('SuccessPage - Buscando detalhes de pagamento para sessionId:', sessionId);
+        
+        // Buscar registro pelo payment_id (que é o sessionId)
+        const { data, error } = await supabase
+          .from('form_submissions')
+          .select('*')
+          .eq('payment_id', sessionId);
           
-          // Se temos paymentId, atualizamos o status do pagamento
-          if (paymentId) {
-            // Update payment status
-            const { error } = await supabase
-              .from('form_submissions')
-              .update({ 
-                payment_status: 'completed',
-                payment_id: paymentId,
-                payment_date: new Date().toISOString(),
-                plan: plan || 'monthly' // Usar o plano da URL
-              })
-              .eq('id', formId);
-              
-            if (error) {
-              console.error('Error updating payment status:', error);
-              toast.error(language === 'en' 
-                ? 'Error confirming payment. Please contact support.' 
-                : 'Erro ao confirmar o pagamento. Por favor, entre em contato com o suporte.');
-            } else {
-              toast.success(language === 'en'
-                ? 'Payment confirmed successfully! Our team will contact you soon.'
-                : 'Pagamento confirmado com sucesso! Nossa equipe entrará em contato em breve.');
-              
-              // Clear storage after successful update
-              localStorage.removeItem('form_id');
-              localStorage.removeItem('current_payment_id');
-            }
+        if (error) {
+          console.error('Erro ao buscar detalhes do pagamento:', error);
+          setIsProcessing(false);
+          return;
+        }
+        
+        console.log('SuccessPage - Dados encontrados:', data);
+        
+        if (data && data.length > 0) {
+          // Mostrar nome da empresa
+          const payment = data[0];
+          setBusinessName(payment.business);
+          
+          toast.success(language === 'en'
+            ? 'Payment information retrieved successfully!'
+            : 'Informações do pagamento recuperadas com sucesso!');
+        } else {
+          // Buscar por original_form_id no caso de outro formato de ID
+          console.log('SuccessPage - Tentando buscar por originalFormId no sessionId');
+          
+          const { data: secondaryData, error: secondaryError } = await supabase
+            .from('form_submissions')
+            .select('*')
+            .eq('original_form_id', sessionId);
+            
+          if (secondaryError) {
+            console.error('Erro na busca secundária:', secondaryError);
+          } else if (secondaryData && secondaryData.length > 0) {
+            const secondaryPayment = secondaryData[0];
+            setBusinessName(secondaryPayment.business);
+            
+            toast.success(language === 'en'
+              ? 'Payment information found through alternative method!'
+              : 'Informações do pagamento encontradas por método alternativo!');
+          } else {
+            console.log('SuccessPage - Nenhum registro encontrado com este sessionId ou formId');
           }
         }
       } catch (error) {
-        console.error('Error in payment confirmation:', error);
+        console.error('Error processing payment details:', error);
       } finally {
         setIsProcessing(false);
       }
     };
     
-    updatePaymentStatus();
+    fetchPaymentDetails();
   }, [language, sessionId, plan]);
 
   const handleGoHome = () => {

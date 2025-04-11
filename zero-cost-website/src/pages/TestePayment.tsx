@@ -45,8 +45,9 @@ const TestePayment: React.FC = () => {
             name: formData.nome,
             email: formData.email,
             selectedPlan: formData.plano,
-            business: 'Teste',
-            phone: '12345678',
+            business: 'Teste de Pagamento',
+            business_details: 'Teste de integração',
+            phone: '11999999999',
             description: 'Teste de pagamento R$ 1,00',
             testPayment: true
           },

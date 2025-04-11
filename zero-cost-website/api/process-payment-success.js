@@ -57,86 +57,101 @@ module.exports = async (req, res) => {
     if (session.payment_status === 'paid') {
       console.log(`[PAYMENT SUCCESS] Pagamento confirmado para a sessão ${sessionId}`);
       
-      // Verificar dados armazenados
-      console.log("[FORM DATA] Conteúdo do armazenamento:", Object.keys(formDataStorage));
-      console.log(`[FORM DATA] Procurando pelo formId: ${formId}`);
+      // NOVA ABORDAGEM: Atualizar registro existente no Supabase com o status de pagamento
+      console.log("[SUPABASE UPDATE] Atualizando registro para formId:", formId);
       
-      if (formDataStorage[formId]) {
-        console.log(`[FORM DATA] Dados encontrados para formId: ${formId}`);
-        const storedData = formDataStorage[formId];
+      try {
+        // Função para gerar UUID válido (caso precise para o registro de fallback)
+        function uuidv4() {
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
+        }
         
-        try {
-          // Extrair dados
-          const { formData } = storedData;
-          const isTestPayment = test === 'true';
+        // Buscar o registro pelo formId original
+        const { data: existingRecords, error: searchError } = await supabaseClient
+          .from('form_submissions')
+          .select('*')
+          .eq('original_form_id', formId);
           
-          // Função para gerar UUID válido
-          function uuidv4() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-              var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-              return v.toString(16);
-            });
-          }
+        console.log('[SUPABASE UPDATE] Registros encontrados:', existingRecords ? existingRecords.length : 0);
+        
+        if (searchError) {
+          console.error('[SUPABASE UPDATE] Erro ao buscar registro:', searchError);
+        } else if (existingRecords && existingRecords.length > 0) {
+          // Encontrou o registro, atualizar status
+          const existingRecord = existingRecords[0];
+          console.log('[SUPABASE UPDATE] Registro encontrado:', existingRecord.id);
           
-          // Preparar dados para Supabase (com todos os campos obrigatórios)
-          const submissionData = {
-            id: uuidv4(), // Usar UUID em vez do formId
-            name: formData.name || 'Sem nome',
-            email: formData.email || 'sem@email.com',
-            phone: formData.phone || '11999999999', // Campo obrigatório
-            business: formData.business || 'Pagamento via site', // Campo obrigatório
-            business_details: formData.business_details || 'Empresa do site' // Campo obrigatório
-          };
-          
-          // Salvar no Supabase
-          try {
-            console.log('[SUPABASE DEBUG] Tentando salvar dados:', JSON.stringify(submissionData));
-            console.log('[SUPABASE DEBUG] URL Supabase:', process.env.SUPABASE_URL);
-            console.log('[SUPABASE DEBUG] Comprimento da chave:', process.env.SUPABASE_KEY ? process.env.SUPABASE_KEY.length : 'não definida');
-            console.log('[SUPABASE DEBUG] Tabela alvo:', 'form_submissions');
+          const { data: updateData, error: updateError } = await supabaseClient
+            .from('form_submissions')
+            .update({
+              payment_status: 'paid',
+              payment_id: sessionId,
+              payment_date: new Date().toISOString()
+            })
+            .eq('id', existingRecord.id)
+            .select();
             
-            // Mudar de upsert para insert com select para diagnóstico
+          if (updateError) {
+            console.error('[SUPABASE UPDATE] Erro ao atualizar status:', updateError);
+          } else {
+            console.log('[SUPABASE UPDATE] Status atualizado com sucesso:', updateData);
+          }
+        } else {
+          // Não encontrou o registro, verificar armazenamento local
+          console.log('[SUPABASE UPDATE] Registro não encontrado no Supabase, verificando armazenamento local');
+          
+          if (formDataStorage[formId]) {
+            // Tentar criar um novo registro a partir dos dados locais
+            const storedData = formDataStorage[formId];
+            const { formData } = storedData;
+            
+            const fallbackData = {
+              id: uuidv4(),
+              name: formData.name || 'Pagamento de recuperação',
+              email: formData.email || 'recuperacao@pagamento.com',
+              phone: formData.phone || '11999999999',
+              business: formData.business || 'Empresa recuperada',
+              business_details: formData.business_details || 'Detalhes recuperados',
+              original_form_id: formId,
+              payment_status: 'paid',
+              payment_id: sessionId,
+              payment_date: new Date().toISOString(),
+              selected_plan: plan
+            };
+            
             const { data, error } = await supabaseClient
               .from('form_submissions')
-              .insert(submissionData)
+              .insert(fallbackData)
               .select();
               
             if (error) {
-              console.error('[PAYMENT SUCCESS] Erro ao salvar no Supabase:', error);
+              console.error('[SUPABASE UPDATE] Erro ao inserir dados de recuperação:', error);
             } else {
-              console.log('[PAYMENT SUCCESS] Dados salvos com sucesso no Supabase:', data);
+              console.log('[SUPABASE UPDATE] Dados de recuperação salvos com sucesso:', data);
             }
-          } catch (supabaseError) {
-            console.error('[PAYMENT SUCCESS] Exceção ao salvar no Supabase:', supabaseError);
-            console.error('[PAYMENT SUCCESS] Detalhes do erro:', supabaseError.message);
-          }
-          
-          // Limpar dados temporários
-          delete formDataStorage[formId];
-          saveStorage(); // Salvar estado no arquivo após limpar
-        } catch (dbError) {
-          console.error('[PAYMENT SUCCESS] Erro ao processar dados:', dbError);
-        }
-      } else {
-        // Caso de pagamento sem dados temporários
-        console.log(`[PAYMENT SUCCESS] Nenhum dado temporário para formId: ${formId}`);
-        
-        try {
-          const isTestPayment = test === 'true';
-          
-          // Reuse function uuidv4 from above
-          const minimalData = {
-            id: uuidv4(), // Usando UUID para garantir compatibilidade
-            name: 'Pagamento sem dados', 
-            email: 'pagamento@semformulario.com',
-            phone: '11999999999', // Campo obrigatório
-            business: 'Pagamento direto', // Campo obrigatório
-            business_details: 'Pagamento direto sem formulário' // Campo obrigatório
-          };
-          
-          // Tentar salvar dados mínimos
-          try {
-            console.log('[SUPABASE DEBUG MINIMALDATA] Tentando salvar dados mínimos:', JSON.stringify(minimalData));
+            
+            // Limpar dados temporários
+            delete formDataStorage[formId];
+            saveStorage();
+          } else {
+            // Último recurso: criar um registro mínimo
+            console.log('[SUPABASE UPDATE] Nenhum dado disponível, criando registro mínimo');
+            
+            const minimalData = {
+              id: uuidv4(),
+              name: 'Pagamento sem dados',
+              email: 'pagamento@semformulario.com',
+              phone: '11999999999',
+              business: 'Pagamento direto',
+              business_details: 'Pagamento direto sem formulário',
+              payment_status: 'paid',
+              payment_id: sessionId,
+              payment_date: new Date().toISOString(),
+              selected_plan: plan
+            };
             
             const { data, error } = await supabaseClient
               .from('form_submissions')
@@ -144,17 +159,14 @@ module.exports = async (req, res) => {
               .select();
               
             if (error) {
-              console.error('[PAYMENT SUCCESS] Erro ao salvar dados mínimos:', error);
+              console.error('[SUPABASE UPDATE] Erro ao salvar dados mínimos:', error);
             } else {
-              console.log('[PAYMENT SUCCESS] Dados mínimos salvos com sucesso:', data);
+              console.log('[SUPABASE UPDATE] Dados mínimos salvos com sucesso:', data);
             }
-          } catch (supabaseError) {
-            console.error('[PAYMENT SUCCESS] Exceção ao salvar dados mínimos:', supabaseError);
-            console.error('[PAYMENT SUCCESS] Detalhes do erro mínimo:', supabaseError.message);
           }
-        } catch (minError) {
-          console.error('[PAYMENT SUCCESS] Erro ao processar dados mínimos:', minError);
         }
+      } catch (dbError) {
+        console.error('[SUPABASE UPDATE] Erro ao processar atualização:', dbError);
       }
       
       // Redirecionar para página de sucesso com confetes
