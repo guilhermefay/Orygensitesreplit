@@ -34,7 +34,8 @@ module.exports = async (req, res) => {
       name: 'Teste Supabase',
       email: 'teste@supabase.com',
       phone: '11999999999', // Campo obrigatório
-      business: 'Teste Empresa' // Campo obrigatório
+      business: 'Teste Empresa', // Campo obrigatório
+      business_details: 'Detalhes da empresa de teste' // Campo obrigatório
     };
 
     console.log('[SUPABASE TEST] Dados a inserir:', JSON.stringify(testData));
