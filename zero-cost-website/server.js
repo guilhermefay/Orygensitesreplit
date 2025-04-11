@@ -59,6 +59,7 @@ setupCreatePaymentIntent(app);
 app.use('/api/checkout-direct', require('./api/checkout-direct'));
 app.use('/api/process-payment-success', require('./api/process-payment-success'));
 app.use('/api/store-form-data', require('./api/store-form-data'));
+app.use('/api/supabase-check', require('./api/supabase-check'));
 console.log('✅ Todas as rotas de API registradas corretamente');
 
 // Adicionar mais logging para depuração
@@ -116,6 +117,13 @@ const PORT = process.env.PORT || 5000;
 // Configurar o servidor para servir os arquivos estáticos da aplicação Vite
 // O diretório dist contém a build da aplicação gerada pelo Vite
 const distPath = path.join(__dirname, 'dist');
+
+// Configurar para servir arquivos da pasta public (arquivos estáticos sem depender de build)
+const publicPath = path.join(__dirname, 'public');
+if (fs.existsSync(publicPath)) {
+  console.log('Configurando servidor para servir arquivos estáticos da pasta public em:', publicPath);
+  app.use(express.static(publicPath));
+}
 
 // Verificar se o diretório dist existe, se não, vamos servir via proxy
 if (fs.existsSync(distPath)) {

@@ -82,10 +82,18 @@ const SuccessPage: React.FC = () => {
         console.log('SuccessPage - Processando pagamento diretamente com sessionId:', sessionId);
         try {
           // Opção 1: Tentar enviar para o servidor processar
-          const isDev = window.location.hostname === 'localhost';
-          const processUrl = isDev 
-            ? `/api/process-payment-success?sessionId=${sessionId}&formId=${formId || ''}&plan=${plan || 'monthly'}`
-            : `https://${window.location.hostname}/api/process-payment-success?sessionId=${sessionId}&formId=${formId || ''}&plan=${plan || 'monthly'}`;
+          const isDomainOrygen = window.location.hostname.includes('orygen');
+          const useReplit = isDomainOrygen || window.location.hostname.includes('replit');
+          
+          // Para domínios personalizados como orygensites.com, precisamos usar a URL completa do Replit
+          const apiDomain = useReplit 
+            ? (window.location.hostname === 'localhost' ? '' : 'https://zero-cost-website.orygentech.repl.co')
+            : '';
+            
+          const processUrl = `${apiDomain}/api/process-payment-success?sessionId=${sessionId}&formId=${formId || ''}&plan=${plan || 'monthly'}`;
+          
+          console.log('SuccessPage - URL da API:', processUrl);
+          console.log('SuccessPage - domínio detecado:', window.location.hostname, 'useReplit:', useReplit);
           
           console.log('SuccessPage - Tentando processar via API:', processUrl);
           

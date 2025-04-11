@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagnóstico de Pagamento - Orygen Sites</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="min-h-screen bg-gray-50 py-12 px-4">
+  <div class="max-w-3xl mx-auto">
+    <h1 class="text-3xl font-bold text-center mb-8">Diagnóstico de Pagamento</h1>
+    
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <h2 class="text-xl font-semibold mb-4">Verificar Sessão do Stripe</h2>
+      
+      <div class="flex gap-4 mb-4">
+        <input
+          type="text"
+          id="sessionId"
+          placeholder="ID da Sessão (cs_live_...)"
+          class="flex-1 border border-gray-300 rounded px-3 py-2"
+        />
+      </div>
+      
+      <div class="flex gap-4 mb-4">
+        <input
+          type="text"
+          id="formId"
+          placeholder="ID do Formulário"
+          class="flex-1 border border-gray-300 rounded px-3 py-2"
+        />
+      </div>
+      
+      <div class="flex gap-2 flex-wrap">
+        <button
+          id="checkStripeBtn"
+          class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          Verificar Sessão
+        </button>
+        
+        <button
+          id="checkSupabaseBtn"
+          class="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 disabled:opacity-50"
+        >
+          Verificar no Supabase
+        </button>
+        
+        <button
+          id="saveTestBtn"
+          class="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 disabled:opacity-50"
+        >
+          Salvar Registro de Teste
+        </button>
+        
+        <button
+          id="processPaymentBtn"
+          class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 disabled:opacity-50"
+        >
+          Processar Pagamento
+        </button>
+      </div>
+
+      <div class="mt-4">
+        <p id="status" class="text-sm text-gray-700"></p>
+      </div>
+    </div>
+    
+    <div id="resultContainer" class="bg-white rounded-lg shadow-md p-6 hidden">
+      <h2 class="text-xl font-semibold mb-4">Resultado:</h2>
+      <pre id="resultOutput" class="bg-gray-100 p-4 rounded overflow-auto max-h-96"></pre>
+    </div>
+    
+    <div class="mt-6 text-center">
+      <button
+        onclick="window.location.href='/'"
+        class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+      >
+        Voltar para a Página Inicial
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Funções utilitárias
+    function showMessage(message, isError = false) {
+      const statusElement = document.getElementById('status');
+      statusElement.textContent = message;
+      statusElement.className = isError ? 'text-sm text-red-600' : 'text-sm text-green-600';
+    }
+
+    function showResult(data) {
+      const resultContainer = document.getElementById('resultContainer');
+      const resultOutput = document.getElementById('resultOutput');
+      
+      resultContainer.classList.remove('hidden');
+      resultOutput.textContent = JSON.stringify(data, null, 2);
+    }
+
+    function getApiBaseUrl() {
+      // Detectar se estamos em um domínio personalizado ou no Replit
+      const host = window.location.hostname;
+      
+      if (host.includes('replit') || host.includes('localhost')) {
+        return '';  // URL relativa
+      } else {
+        return 'https://zero-cost-website.orygentech.repl.co'; // URL absoluta para o Replit
+      }
+    }
+
+    // Botão para verificar sessão do Stripe
+    document.getElementById('checkStripeBtn').addEventListener('click', async () => {
+      const sessionId = document.getElementById('sessionId').value;
+      
+      if (!sessionId) {
+        showMessage('Por favor, informe o ID da sessão', true);
+        return;
+      }
+      
+      showMessage('Verificando sessão...');
+      
+      try {
+        const apiBase = getApiBaseUrl();
+        const response = await axios.get(`${apiBase}/api/debug-session?sessionId=${sessionId}`);
+        
+        showMessage('Sessão verificada com sucesso!');
+        showResult(response.data);
+      } catch (error) {
+        console.error('Erro ao verificar sessão:', error);
+        showMessage(`Erro ao verificar sessão: ${error.message}`, true);
+      }
+    });
+
+    // Botão para verificar dados no Supabase
+    document.getElementById('checkSupabaseBtn').addEventListener('click', async () => {
+      const sessionId = document.getElementById('sessionId').value;
+      const formId = document.getElementById('formId').value;
+      
+      showMessage('Buscando dados no Supabase...');
+      
+      try {
+        // Construir query params
+        let queryParams = '';
+        if (sessionId) queryParams += `sessionId=${sessionId}`;
+        if (formId) {
+          if (queryParams) queryParams += '&';
+          queryParams += `formId=${formId}`;
+        }
+        
+        const apiBase = getApiBaseUrl();
+        const response = await axios.get(`${apiBase}/api/supabase-check?${queryParams}`);
+        
+        if (response.data && response.data.data && response.data.data.length > 0) {
+          showMessage(`Encontrados ${response.data.data.length} registros!`);
+        } else {
+          showMessage('Nenhum registro encontrado');
+        }
+        
+        showResult(response.data);
+      } catch (error) {
+        console.error('Erro ao verificar dados:', error);
+        showMessage(`Erro ao verificar dados: ${error.message}`, true);
+      }
+    });
+
+    // Botão para salvar registro de teste
+    document.getElementById('saveTestBtn').addEventListener('click', async () => {
+      const sessionId = document.getElementById('sessionId').value;
+      const formId = document.getElementById('formId').value;
+      
+      if (!sessionId || !formId) {
+        showMessage('Por favor, informe o ID da sessão e o ID do formulário', true);
+        return;
+      }
+      
+      showMessage('Salvando registro de teste...');
+      
+      try {
+        const apiBase = getApiBaseUrl();
+        const response = await axios.post(`${apiBase}/api/store-form-data`, {
+          sessionId,
+          formId,
+          name: 'Teste Manual',
+          email: 'teste.manual@exemplo.com',
+          phone: '11999999999',
+          business: 'Empresa de Teste Manual',
+          business_details: 'Detalhes da empresa de teste manual',
+          isTest: true
+        });
+        
+        showMessage('Registro de teste salvo com sucesso!');
+        showResult(response.data);
+      } catch (error) {
+        console.error('Erro ao salvar registro:', error);
+        showMessage(`Erro ao salvar registro: ${error.message}`, true);
+      }
+    });
+
+    // Botão para processar pagamento manualmente
+    document.getElementById('processPaymentBtn').addEventListener('click', async () => {
+      const sessionId = document.getElementById('sessionId').value;
+      const formId = document.getElementById('formId').value;
+      
+      if (!sessionId || !formId) {
+        showMessage('Por favor, informe o ID da sessão e o ID do formulário', true);
+        return;
+      }
+      
+      showMessage('Processando pagamento manualmente...');
+      
+      try {
+        const apiBase = getApiBaseUrl();
+        const response = await axios.get(`${apiBase}/api/process-payment-success?sessionId=${sessionId}&formId=${formId}&plan=monthly`);
+        
+        showMessage('Pagamento processado com sucesso!');
+        showResult(response.data);
+      } catch (error) {
+        console.error('Erro ao processar pagamento:', error);
+        showMessage(`Erro ao processar pagamento: ${error.message}`, true);
+      }
+    });
+
+    // Verificar se há parâmetros na URL
+    window.addEventListener('load', () => {
+      const params = new URLSearchParams(window.location.search);
+      
+      if (params.get('sessionId')) {
+        document.getElementById('sessionId').value = params.get('sessionId');
+      }
+      
+      if (params.get('formId')) {
+        document.getElementById('formId').value = params.get('formId');
+      }
+      
+      // Se temos os dois parâmetros, verificar automaticamente a sessão
+      if (params.get('sessionId') && params.get('formId')) {
+        document.getElementById('checkStripeBtn').click();
+      }
+    });
+  </script>
+</body>
+</html>
