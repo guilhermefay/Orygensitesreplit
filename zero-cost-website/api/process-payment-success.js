@@ -107,7 +107,7 @@ module.exports = async (req, res) => {
           // Tentar salvar dados mínimos
           try {
             const { error } = await supabaseClient
-              .from('website_projects')
+              .from('form_submissions')
               .upsert(minimalData, { onConflict: 'id' });
               
             if (error) {
