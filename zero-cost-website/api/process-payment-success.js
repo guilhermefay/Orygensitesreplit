@@ -61,11 +61,13 @@ module.exports = async (req, res) => {
             });
           }
           
-          // Preparar dados para Supabase (apenas campos básicos com UUID válido)
+          // Preparar dados para Supabase (com campos obrigatórios)
           const submissionData = {
             id: uuidv4(), // Usar UUID em vez do formId
             name: formData.name || 'Sem nome',
-            email: formData.email || 'sem@email.com'
+            email: formData.email || 'sem@email.com',
+            phone: formData.phone || '11999999999', // Campo obrigatório
+            business: formData.business || 'Pagamento via site' // Campo obrigatório (não business_name)
           };
           
           // Salvar no Supabase
@@ -105,7 +107,9 @@ module.exports = async (req, res) => {
           const minimalData = {
             id: uuidv4(), // Usando UUID para garantir compatibilidade
             name: 'Pagamento sem dados', 
-            email: 'pagamento@semformulario.com'
+            email: 'pagamento@semformulario.com',
+            phone: '11999999999', // Campo obrigatório
+            business: 'Pagamento direto' // Campo obrigatório
           };
           
           // Tentar salvar dados mínimos

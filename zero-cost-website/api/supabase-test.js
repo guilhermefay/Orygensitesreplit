@@ -28,11 +28,13 @@ module.exports = async (req, res) => {
       });
     }
     
-    // Dados de teste com UUID válido
+    // Dados de teste com todos os campos obrigatórios
     const testData = {
       id: uuidv4(), 
       name: 'Teste Supabase',
-      email: 'teste@supabase.com'
+      email: 'teste@supabase.com',
+      phone: '11999999999', // Campo obrigatório
+      business: 'Teste Empresa' // Campo obrigatório
     };
 
     console.log('[SUPABASE TEST] Dados a inserir:', JSON.stringify(testData));
