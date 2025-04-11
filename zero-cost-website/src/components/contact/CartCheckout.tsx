@@ -205,10 +205,8 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                         
                         const effectiveFormId = formId || `test_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
                         
-                        // Armazenar dados temporariamente (compatível com Vercel)
-                        const storeUrl = process.env.NODE_ENV === 'production' 
-                          ? '/api/checkout/store-form-data' 
-                          : '/api/store-form-data';
+                        // Armazenar dados temporariamente (adaptado para Replit)
+                        const storeUrl = '/api/store-form-data';
                         
                         await fetch(storeUrl, {
                           method: 'POST',
@@ -225,10 +223,8 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                           }),
                         });
                         
-                        // Redirecionar para a rota de teste (compatível com Vercel)
-                        const redirectUrl = process.env.NODE_ENV === 'production'
-                          ? `/api/checkout/redirect?amount=100&currency=brl&plan=${selectedPlan}&formId=${effectiveFormId}&test=true`
-                          : `/api/checkout-redirect?amount=100&currency=brl&plan=${selectedPlan}&formId=${effectiveFormId}&test=true`;
+                        // Redirecionar para a rota de teste (adaptado para Replit)
+                        const redirectUrl = `/api/checkout-redirect?amount=100&currency=brl&plan=${selectedPlan}&formId=${effectiveFormId}&test=true`;
                         console.log(`Redirecionando para sessão de teste (1 real): ${redirectUrl}`);
                         window.location.href = redirectUrl;
                       } catch (error) {
