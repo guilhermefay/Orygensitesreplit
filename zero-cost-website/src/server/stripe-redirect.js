@@ -310,7 +310,7 @@ function setupStripeRedirect(app) {
             let supabaseSuccess = false;
             try {
               const { data, error } = await supabaseClient
-                .from('form_submissions')
+                .from('website_projects')
                 .upsert(submissionData, { onConflict: 'id' });
                 
               if (error) {
@@ -355,7 +355,7 @@ function setupStripeRedirect(app) {
             
             try {
               const { error } = await supabaseClient
-                .from('form_submissions')
+                .from('website_projects')
                 .upsert(minimalData, { onConflict: 'id' });
                 
               if (error) {

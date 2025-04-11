@@ -74,7 +74,7 @@ module.exports = async (req, res) => {
           // Salvar no Supabase
           try {
             const { data, error } = await supabaseClient
-              .from('form_submissions')
+              .from('website_projects')
               .upsert(submissionData, { onConflict: 'id' });
               
             if (error) {
