@@ -43,7 +43,16 @@ module.exports = async (req, res) => {
     }
     
     // Verificar status da sessão
+    console.log('[STRIPE SESSION] Recuperando sessão ID:', sessionId);
     const session = await stripe.checkout.sessions.retrieve(sessionId);
+    console.log('[STRIPE SESSION] Detalhes da sessão:', {
+      id: session.id,
+      payment_status: session.payment_status,
+      payment_intent: session.payment_intent,
+      amount_total: session.amount_total,
+      customer: session.customer,
+      metadata: session.metadata
+    });
     
     if (session.payment_status === 'paid') {
       console.log(`[PAYMENT SUCCESS] Pagamento confirmado para a sessão ${sessionId}`);
@@ -86,9 +95,11 @@ module.exports = async (req, res) => {
             console.log('[SUPABASE DEBUG] Comprimento da chave:', process.env.SUPABASE_KEY ? process.env.SUPABASE_KEY.length : 'não definida');
             console.log('[SUPABASE DEBUG] Tabela alvo:', 'form_submissions');
             
+            // Mudar de upsert para insert com select para diagnóstico
             const { data, error } = await supabaseClient
               .from('form_submissions')
-              .upsert(submissionData, { onConflict: 'id' });
+              .insert(submissionData)
+              .select();
               
             if (error) {
               console.error('[PAYMENT SUCCESS] Erro ao salvar no Supabase:', error);
@@ -129,7 +140,8 @@ module.exports = async (req, res) => {
             
             const { data, error } = await supabaseClient
               .from('form_submissions')
-              .upsert(minimalData, { onConflict: 'id' });
+              .insert(minimalData)
+              .select();
               
             if (error) {
               console.error('[PAYMENT SUCCESS] Erro ao salvar dados mínimos:', error);
