@@ -13,8 +13,11 @@
     "@stripe/react-stripe-js": "^3.6.0",
     "@stripe/stripe-js": "^7.0.0",
     "@supabase/supabase-js": "^2.49.4",
+    "confetti-js": "^0.0.18",
     "cors": "^2.8.5",
     "express": "^5.1.0",
+    "react-confetti": "^6.4.0",
+    "react-dom": "^19.1.0",
     "stripe": "^18.0.0"
   }
 }

@@ -41,7 +41,9 @@ module.exports = async (req, res) => {
     const host = req.headers.host || 'localhost:3000';
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
     
-    const successUrl = `${protocol}://${host}/api/checkout/success?sessionId={CHECKOUT_SESSION_ID}&formId=${formId}&plan=${plan}${test ? '&test=true' : ''}`;
+    // Atualizado para usar a rota /api/process-payment-success
+    const successUrl = `${protocol}://${host}/api/process-payment-success?sessionId={CHECKOUT_SESSION_ID}&formId=${formId}&plan=${plan}${test ? '&test=true' : ''}`;
+    // Mantém a página de cancelamento original
     const cancelUrl = `${protocol}://${host}?success=false`;
     
     // Criar sessão
