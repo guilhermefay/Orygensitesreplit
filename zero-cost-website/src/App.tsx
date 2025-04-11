@@ -13,6 +13,9 @@ import TestePayment from "./pages/TestePayment";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { supabase } from "./lib/supabase/client";
 
+// Configuração de debug para React Router
+console.log('Inicializando React Router - App.tsx');
+
 const queryClient = new QueryClient();
 
 // Component to check for payment returns
@@ -85,19 +88,23 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter basename="/">
           <PaymentSuccessHandler />
           <Routes>
+            {/* Rota de sucesso com maior prioridade */}
+            <Route path="/success" element={<SuccessPage />} />
+            <Route path="/payment-success" element={<SuccessPage />} />
+            
+            {/* Outras rotas */}
             <Route path="/" element={<Index />} />
             <Route path="/planos/variant1" element={<PlanPage variant="variant1" />} />
             <Route path="/planos/variant2" element={<PlanPage variant="variant2" />} />
             <Route path="/planos/promotion" element={<PlanPage variant="promotion" />} />
             <Route path="/planos/promotion_usd" element={<PlanPage variant="promotion_usd" />} />
             <Route path="/planos/a" element={<PlanPage variant="a" />} />
-            <Route path="/payment-success" element={<SuccessPage />} />
-            <Route path="/success" element={<SuccessPage />} />
             <Route path="/teste" element={<TestePayment />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            
+            {/* Rota catch-all para páginas não encontradas */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

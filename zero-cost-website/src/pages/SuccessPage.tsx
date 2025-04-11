@@ -6,6 +6,9 @@ import { supabase } from '@/lib/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ReactConfetti from 'react-confetti';
 
+// Log para verificar se o componente está sendo importado
+console.log('SuccessPage.tsx carregado!');
+
 const SuccessPage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(true);
   const [businessName, setBusinessName] = useState<string>('');
@@ -43,13 +46,24 @@ const SuccessPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Log de debug para verificar o contexto da página
+    console.log('SuccessPage - useEffect iniciando com:', { 
+      pathname: location.pathname,
+      search: location.search,
+      sessionId,
+      plan
+    });
+    
     // Usar o sessionId da URL se disponível, ou do localStorage caso contrário
     const formId = localStorage.getItem('form_id');
     const paymentId = sessionId || localStorage.getItem('current_payment_id');
     
+    console.log('SuccessPage - Dados do pagamento:', { formId, paymentId });
+    
     const updatePaymentStatus = async () => {
       // Se temos paymentId da URL mas não temos formId, ainda assim mostramos sucesso
       if (!formId && !paymentId) {
+        console.log('SuccessPage - Sem formId ou paymentId, mostrando página de sucesso genérica');
         setIsProcessing(false);
         return;
       }
