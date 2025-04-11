@@ -9,6 +9,7 @@ const supabaseKey = process.env.SUPABASE_KEY;
 // Log das informações para depuração
 console.log('[SUPABASE CONFIG] URL:', supabaseUrl);
 console.log('[SUPABASE CONFIG] Key length:', supabaseKey ? supabaseKey.length : 0);
+console.log('[SUPABASE CONFIG] Table name: website_projects (corrigido)');
 
 // Alternativa de salvamento local para emergências
 function saveLocalBackup(data) {
