@@ -9,7 +9,7 @@ const supabaseKey = process.env.SUPABASE_KEY;
 // Log das informações para depuração
 console.log('[SUPABASE CONFIG] URL:', supabaseUrl);
 console.log('[SUPABASE CONFIG] Key length:', supabaseKey ? supabaseKey.length : 0);
-console.log('[SUPABASE CONFIG] Table name: website_projects (corrigido)');
+console.log('[SUPABASE CONFIG] Table name: form_submissions (corrigido)');
 
 // Alternativa de salvamento local para emergências
 function saveLocalBackup(data) {
@@ -287,22 +287,17 @@ function setupStripeRedirect(app) {
             const { formData } = storedData;
             const isTestPayment = req.query.test === 'true';
             
-            // Dados para inserir no Supabase
+            // Dados para inserir no Supabase (campos simplificados)
             const submissionData = {
               id: formId,  // Usar o formId como ID para evitar duplicação
               name: formData.name || 'Sem nome',
               email: formData.email || 'sem@email.com',
-              phone: formData.phone || '',
               business: formData.business || '',
-              description: formData.description || '',
-              plan: plan || 'não especificado',
               payment_id: sessionId,
-              payment_status: 'completed',
               payment_date: new Date().toISOString(),
               payment_test: isTestPayment,
               payment_amount: isTestPayment ? 100 : (plan === 'annual' ? 59880 : 5980),
-              payment_currency: 'brl',
-              created_at: new Date().toISOString()
+              payment_currency: 'brl'
             };
             
             console.log('[PAYMENT SUCCESS] Dados a serem enviados para o Supabase:', submissionData);
@@ -311,7 +306,7 @@ function setupStripeRedirect(app) {
             let supabaseSuccess = false;
             try {
               const { data, error } = await supabaseClient
-                .from('website_projects')
+                .from('form_submissions')
                 .upsert(submissionData, { onConflict: 'id' });
                 
               if (error) {
@@ -343,20 +338,17 @@ function setupStripeRedirect(app) {
             const minimalData = {
               id: formId, 
               payment_id: sessionId,
-              payment_status: 'completed',
               payment_date: new Date().toISOString(),
               payment_test: isTestPayment,
               payment_amount: isTestPayment ? 100 : (plan === 'annual' ? 59880 : 5980),
               payment_currency: 'brl',
-              plan: plan || 'não especificado',
-              created_at: new Date().toISOString(),
               name: 'Pagamento sem dados', 
               email: 'pagamento@semformulario.com'
             };
             
             try {
               const { error } = await supabaseClient
-                .from('website_projects')
+                .from('form_submissions')
                 .upsert(minimalData, { onConflict: 'id' });
                 
               if (error) {

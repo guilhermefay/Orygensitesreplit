@@ -53,28 +53,23 @@ module.exports = async (req, res) => {
           const { formData } = storedData;
           const isTestPayment = test === 'true';
           
-          // Preparar dados para Supabase
+          // Preparar dados para Supabase (campos simplificados)
           const submissionData = {
             id: formId,
             name: formData.name || 'Sem nome',
             email: formData.email || 'sem@email.com',
-            phone: formData.phone || '',
             business: formData.business || '',
-            description: formData.description || '',
-            plan: plan || 'não especificado',
             payment_id: sessionId,
-            payment_status: 'completed',
             payment_date: new Date().toISOString(),
             payment_test: isTestPayment,
             payment_amount: isTestPayment ? 100 : (plan === 'annual' ? 59880 : 5980),
-            payment_currency: 'brl',
-            created_at: new Date().toISOString()
+            payment_currency: 'brl'
           };
           
           // Salvar no Supabase
           try {
             const { data, error } = await supabaseClient
-              .from('website_projects')
+              .from('form_submissions')
               .upsert(submissionData, { onConflict: 'id' });
               
             if (error) {
@@ -101,13 +96,10 @@ module.exports = async (req, res) => {
           const minimalData = {
             id: formId, 
             payment_id: sessionId,
-            payment_status: 'completed',
             payment_date: new Date().toISOString(),
             payment_test: isTestPayment,
             payment_amount: isTestPayment ? 100 : (plan === 'annual' ? 59880 : 5980),
             payment_currency: 'brl',
-            plan: plan || 'não especificado',
-            created_at: new Date().toISOString(),
             name: 'Pagamento sem dados', 
             email: 'pagamento@semformulario.com'
           };
