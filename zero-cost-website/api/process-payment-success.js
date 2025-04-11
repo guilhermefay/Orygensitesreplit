@@ -1,6 +1,6 @@
 const Stripe = require('stripe');
 const { createClient } = require('@supabase/supabase-js');
-const { formDataStorage } = require('./shared-storage');
+const { formDataStorage, saveStorage } = require('./shared-storage');
 
 // Inicializar o Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -102,6 +102,7 @@ module.exports = async (req, res) => {
           
           // Limpar dados temporários
           delete formDataStorage[formId];
+          saveStorage(); // Salvar estado no arquivo após limpar
         } catch (dbError) {
           console.error('[PAYMENT SUCCESS] Erro ao processar dados:', dbError);
         }

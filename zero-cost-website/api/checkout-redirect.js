@@ -1,4 +1,5 @@
 const Stripe = require('stripe');
+const { formDataStorage, saveStorage } = require('./shared-storage');
 
 // Inicializar o Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);

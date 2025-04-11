@@ -1,5 +1,5 @@
 // Importar armazenamento compartilhado
-const { formDataStorage } = require('./shared-storage');
+const { formDataStorage, saveStorage } = require('./shared-storage');
 
 module.exports = async (req, res) => {
   // Habilitar CORS
@@ -36,6 +36,10 @@ module.exports = async (req, res) => {
     };
     
     console.log(`[FORM STORAGE] Dados temporários armazenados para formId: ${formId}`);
+    
+    // Salvar no arquivo
+    saveStorage();
+    
     return res.status(200).json({ success: true, message: 'Dados armazenados temporariamente' });
   } catch (error) {
     console.error('[FORM STORAGE] Erro:', error);
