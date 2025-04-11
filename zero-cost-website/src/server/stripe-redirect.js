@@ -3,8 +3,8 @@ const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 
 // Criar cliente Supabase com as credenciais de ambiente
-const supabaseUrl = process.env.SUPABASE_URL || 'https://eyzywpxlcyjnwbbxjwwg.supabase.co';
-const supabaseKey = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5enl3cHhsY3lqbndpYnhqd3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTIyODU3NzMsImV4cCI6MjAyNzg2MTc3M30.7RcDyuDgQQzTx8X3sSOTzQKRcg9Dp2S3sLVYEW79X0I';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
 
 // Log das informações para depuração
 console.log('[SUPABASE CONFIG] URL:', supabaseUrl);
@@ -375,8 +375,8 @@ function setupStripeRedirect(app) {
           }
         }
         
-        // Redirecionar para a página de sucesso
-        res.redirect(`/?success=true&plan=${plan}&sessionId=${sessionId}`);
+        // Redirecionar para a página de sucesso com confetes
+        res.redirect(`/success?plan=${plan}&sessionId=${sessionId}`);
       } else {
         console.log(`[PAYMENT SUCCESS] Pagamento não confirmado para sessão ${sessionId}: ${session.payment_status}`);
         res.redirect('/?success=false');

@@ -24,7 +24,9 @@ const PaymentSuccessHandler = () => {
     // Check if this is a return from payment (could be detected by query param or referrer)
     const isReturnFromStripe = document.referrer.includes('stripe.com') || 
                                location.search.includes('payment=success') ||
-                               location.pathname === '/payment-success';
+                               location.search.includes('sessionId=') ||
+                               location.pathname === '/payment-success' ||
+                               location.pathname === '/success';
                                
     if (isReturnFromStripe) {
       console.log("Detected return from Stripe payment");
@@ -60,8 +62,8 @@ const PaymentSuccessHandler = () => {
               localStorage.removeItem('current_payment_id');
               
               // Navigate to success page if not already there
-              if (location.pathname !== '/payment-success') {
-                navigate('/payment-success');
+              if (location.pathname !== '/payment-success' && location.pathname !== '/success') {
+                navigate('/success');
               }
             }
           } catch (error) {
@@ -93,6 +95,7 @@ const App = () => (
             <Route path="/planos/promotion_usd" element={<PlanPage variant="promotion_usd" />} />
             <Route path="/planos/a" element={<PlanPage variant="a" />} />
             <Route path="/payment-success" element={<SuccessPage />} />
+            <Route path="/success" element={<SuccessPage />} />
             <Route path="/teste" element={<TestePayment />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
