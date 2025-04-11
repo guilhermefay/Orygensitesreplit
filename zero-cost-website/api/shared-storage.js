@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Arquivo para armazenar os dados
-const STORAGE_FILE = path.join(__dirname, '../data-storage.json');
+const STORAGE_FILE = path.join(__dirname, 'data/storage.json');
 
 // Inicializar formDataStorage carregando do arquivo se existir
 let formDataStorage = {};
