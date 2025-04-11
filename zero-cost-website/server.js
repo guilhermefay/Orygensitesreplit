@@ -62,9 +62,14 @@ app.get('/api/diagnostics', (req, res) => {
     environment: process.env.NODE_ENV || 'production',
     stripeConfigured: !!process.env.STRIPE_SECRET_KEY,
     publicKeyConfigured: !!process.env.VITE_STRIPE_PUBLIC_KEY,
+    supabaseUrlConfigured: !!process.env.SUPABASE_URL,
+    supabaseKeyConfigured: !!process.env.SUPABASE_KEY,
     timestamp: new Date().toISOString()
   });
 });
+
+// Rota de teste para Supabase
+app.get('/api/supabase-test', require('./api/supabase-test'));
 
 // Definir a porta para o servidor
 const PORT = process.env.PORT || 5000;

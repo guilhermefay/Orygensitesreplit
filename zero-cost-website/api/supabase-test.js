@@ -20,17 +20,14 @@ module.exports = async (req, res) => {
   try {
     console.log('[SUPABASE TEST] Iniciando teste de inserção');
 
-    // Dados de teste
+    // Dados de teste - simplificados para corresponder à estrutura da tabela
     const testData = {
       id: `test-${Date.now()}`, 
       name: 'Teste Supabase',
       email: 'teste@supabase.com',
-      business: 'Empresa de Teste',
-      payment_id: `test-payment-${Date.now()}`,
-      payment_date: new Date().toISOString(),
-      payment_test: true,
-      payment_amount: 100,
-      payment_currency: 'brl'
+      business_name: 'Empresa de Teste',
+      stripe_session_id: `test-payment-${Date.now()}`,
+      created_at: new Date().toISOString()
     };
 
     console.log('[SUPABASE TEST] Dados a inserir:', JSON.stringify(testData));

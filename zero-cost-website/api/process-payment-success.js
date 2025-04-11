@@ -53,17 +53,14 @@ module.exports = async (req, res) => {
           const { formData } = storedData;
           const isTestPayment = test === 'true';
           
-          // Preparar dados para Supabase (campos simplificados)
+          // Preparar dados para Supabase (adaptados para a estrutura da tabela existente)
           const submissionData = {
             id: formId,
             name: formData.name || 'Sem nome',
             email: formData.email || 'sem@email.com',
-            business: formData.business || '',
-            payment_id: sessionId,
-            payment_date: new Date().toISOString(),
-            payment_test: isTestPayment,
-            payment_amount: isTestPayment ? 100 : (plan === 'annual' ? 59880 : 5980),
-            payment_currency: 'brl'
+            business_name: formData.business || '',
+            stripe_session_id: sessionId,
+            created_at: new Date().toISOString()
           };
           
           // Salvar no Supabase
@@ -101,13 +98,11 @@ module.exports = async (req, res) => {
           
           const minimalData = {
             id: formId, 
-            payment_id: sessionId,
-            payment_date: new Date().toISOString(),
-            payment_test: isTestPayment,
-            payment_amount: isTestPayment ? 100 : (plan === 'annual' ? 59880 : 5980),
-            payment_currency: 'brl',
+            stripe_session_id: sessionId,
+            created_at: new Date().toISOString(),
             name: 'Pagamento sem dados', 
-            email: 'pagamento@semformulario.com'
+            email: 'pagamento@semformulario.com',
+            business_name: 'Pagamento direto'
           };
           
           // Tentar salvar dados mínimos
