@@ -35,12 +35,28 @@
       "dest": "/zero-cost-website/api/process-payment-success.js"
     },
     {
+      "src": "/api/process-payment-success",
+      "dest": "/zero-cost-website/api/process-payment-success.js"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/zero-cost-website/api/$1.js"
     },
     {
+      "src": "/success",
+      "dest": "/zero-cost-website/dist/index.html"
+    },
+    {
+      "src": "/payment-success",
+      "dest": "/zero-cost-website/dist/index.html"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/zero-cost-website/dist/$1"
+      "dest": "/zero-cost-website/dist/index.html",
+      "status": 200
     }
   ],
   "env": {
