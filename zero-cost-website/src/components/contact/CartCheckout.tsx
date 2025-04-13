@@ -150,9 +150,12 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                     onClick={async () => {
                       try {
                         console.log("MODO TESTE: Iniciando pagamento de teste de R$ 1,00...");
+                        console.log("Form ID para teste:", formId);
                         
                         // Configurar identificador único para o formulário se não existir
                         const effectiveFormId = formId || `test_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+                        
+                        console.log("ID efetivo para teste:", effectiveFormId);
                         
                         // Create a test payment intent
                         const createResponse = await fetch('/api/create-payment-intent', {
@@ -162,7 +165,8 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                           },
                           body: JSON.stringify({
                             plan: 'test', // Use the test plan which is R$ 1,00
-                            formData: formData
+                            formData: formData,
+                            formId: effectiveFormId // Importante: passar o formId explicitamente
                           }),
                         });
                         
@@ -171,9 +175,10 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                         }
                         
                         const data = await createResponse.json();
+                        console.log("Resposta do pagamento de teste:", data);
                         
                         // Redirect to success page directly for testing
-                        onPaymentSuccess(data.formId);
+                        onPaymentSuccess(data.formId || effectiveFormId);
                         
                         console.log("Pagamento de teste processado com sucesso");
                       } catch (error) {
