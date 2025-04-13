@@ -84,44 +84,15 @@ const SuccessPage: React.FC = () => {
         return;
       }
       
-      // DOMÍNIO PERSONALIZADO: Se temos sessionId na URL, precisamos processar o pagamento diretamente
-      // Esta etapa é crucial quando estamos recebendo o redirecionamento direto do Stripe (sem passar pelo /api/process-payment-success)
-      if (sessionId && (!sessionId.startsWith('cs_test_') && !sessionId.startsWith('cs_live_'))) {
-        // Se não é um ID de sessão do Stripe, não faz sentido processar
-        console.log('SuccessPage - ID de sessão inválido, pulando processamento direto:', sessionId);
-      } else if (sessionId) {
-        console.log('SuccessPage - Processando pagamento diretamente com sessionId:', sessionId);
-        try {
-          // Opção 1: Tentar enviar para o servidor processar
-          const isDomainOrygen = window.location.hostname.includes('orygen');
-          const useReplit = isDomainOrygen || window.location.hostname.includes('replit');
-          
-          // Para domínios personalizados como orygensites.com, precisamos usar a URL completa do Replit
-          const apiDomain = useReplit 
-            ? (window.location.hostname === 'localhost' ? '' : 'https://zero-cost-website.orygentech.repl.co')
-            : '';
-            
-          const processUrl = `${apiDomain}/api/process-payment-success?sessionId=${sessionId}&formId=${formId || ''}&plan=${plan || 'monthly'}`;
-          
-          console.log('SuccessPage - URL da API:', processUrl);
-          console.log('SuccessPage - domínio detecado:', window.location.hostname, 'useReplit:', useReplit);
-          
-          console.log('SuccessPage - Tentando processar via API:', processUrl);
-          
-          try {
-            const processResponse = await fetch(processUrl);
-            if (processResponse.ok) {
-              console.log('SuccessPage - Processamento via API bem-sucedido');
-            } else {
-              console.log('SuccessPage - Processamento via API falhou, continuando com busca direta');
-            }
-          } catch (apiError) {
-            console.error('SuccessPage - Erro ao processar via API:', apiError);
-            console.log('SuccessPage - Continuando com busca direta no Supabase');
-          }
-        } catch (directError) {
-          console.error('SuccessPage - Erro ao processar pagamento diretamente:', directError);
-        }
+      // NOTA: Removemos o código que tentava processar o pagamento diretamente,
+      // agora dependemos exclusivamente do webhook para atualizar o status no Supabase.
+      // Apenas seguimos com a busca dos dados usando o formId ou sessionId (como payment_id)
+      
+      // Apenas logar para diagnóstico
+      if (sessionId) {
+        console.log('SuccessPage - Usando sessionId como payment_id para buscar informações:', sessionId);
+      } else if (formId) {
+        console.log('SuccessPage - Usando formId para buscar informações:', formId);
       }
       
       try {
