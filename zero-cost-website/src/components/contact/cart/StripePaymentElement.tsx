@@ -24,15 +24,17 @@ if (stripePublicKey) {
 
 interface StripePaymentFormProps {
   clientSecret: string;
-  onSuccess: (paymentIntentId: string) => void;
+  onSuccess: (paymentIntentId: string, formId: string) => void;
   businessName: string;
+  formId: string;
 }
 
 // Inner form component that uses the Stripe hooks
 const StripePaymentForm: React.FC<StripePaymentFormProps> = ({ 
   clientSecret, 
   onSuccess,
-  businessName
+  businessName,
+  formId
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -79,8 +81,8 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
         );
         // Store formId in localStorage for potential page refreshes or redirects
         localStorage.setItem('payment_id', paymentIntent.id);
-        // Call the success handler with the payment intent ID
-        onSuccess(paymentIntent.id);
+        // Call the success handler with the payment intent ID and formId
+        onSuccess(paymentIntent.id, formId);
       } else {
         console.log('Payment status:', paymentIntent?.status);
         setErrorMessage(
@@ -145,7 +147,7 @@ interface StripePaymentElementProps {
   amount: number;
   currency: string;
   formData: ContactFormData;
-  onSuccess: (paymentId: string) => void;
+  onSuccess: (paymentId: string, formId: string) => void;
   formId: string;
   files: FileData;
   colorPalette: string[];
@@ -281,6 +283,7 @@ const StripePaymentElement: React.FC<StripePaymentElementProps> = ({
           clientSecret={clientSecret} 
           onSuccess={onSuccess}
           businessName={formData.business}
+          formId={formId}
         />
       </Elements>
     </div>

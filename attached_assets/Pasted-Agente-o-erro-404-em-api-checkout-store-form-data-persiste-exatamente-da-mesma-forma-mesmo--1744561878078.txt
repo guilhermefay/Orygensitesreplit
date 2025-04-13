@@ -1,4 +1,11 @@
+Agente, o erro 404 em `/api/checkout/store-form-data` **persiste exatamente da mesma forma**, mesmo após as últimas correções e o rebuild. O log do console do navegador confirma que a chamada antiga ainda é feita pelo evento `onClick` do botão "Pagar com Cartão de Crédito" na Etapa 4.
 
+**Precisamos garantir que o código problemático seja substituído.** Por favor, faça o seguinte:
+
+1.  **Edite o arquivo `src/components/contact/CartCheckout.tsx`:**
+2.  **Substitua TODO o conteúdo** deste arquivo pelo código **exato** abaixo:
+
+```typescript
 import React, { useState, Suspense, lazy } from "react";
 import OrderSummary from "./cart/OrderSummary";
 import PlanBenefits from "./cart/PlanBenefits";
