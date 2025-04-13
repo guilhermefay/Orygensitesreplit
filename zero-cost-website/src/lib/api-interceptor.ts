@@ -7,6 +7,9 @@
  * para novas rotas, garantindo compatibilidade e evitando erros 404.
  */
 
+// Sinalizar que o interceptor está ativo
+console.log('🚀 INTERCEPTOR: Inicializado e ativo');
+
 // Armazenar a referência original do fetch
 const originalFetch = window.fetch;
 
@@ -14,6 +17,13 @@ const originalFetch = window.fetch;
 const URL_REDIRECTS = {
   '/api/checkout/store-form-data': '/api/store-form-data'
 };
+
+// Testar o interceptor imediatamente
+console.log('🧪 INTERCEPTOR: Teste de correspondência: ', {
+  '/api/checkout/store-form-data': URL_REDIRECTS['/api/checkout/store-form-data'] || 'Não mapeado',
+  '/api/checkout/store-form-data/': URL_REDIRECTS['/api/checkout/store-form-data/'] || 'Não mapeado',
+  '/api/store-form-data': URL_REDIRECTS['/api/store-form-data'] || 'Não mapeado',
+});
 
 // Substituir o fetch global com nossa versão instrumentada
 window.fetch = async function interceptedFetch(input: RequestInfo | URL, init?: RequestInit) {
@@ -23,8 +33,30 @@ window.fetch = async function interceptedFetch(input: RequestInfo | URL, init?: 
   
   // Verificar se esta URL precisa ser redirecionada
   const originalUrl = url;
+  
+  // Primeiro verificar correspondência exata
+  let needsRedirect = false;
+  let newUrl = '';
+  
+  // Verificar se a URL está no mapa de redirecionamentos
   if (URL_REDIRECTS[url]) {
-    const newUrl = URL_REDIRECTS[url];
+    needsRedirect = true;
+    newUrl = URL_REDIRECTS[url];
+  } 
+  // Checar também com uma barra no final (alguns navegadores/frameworks adicionam automaticamente)
+  else if (url.endsWith('/') && URL_REDIRECTS[url.slice(0, -1)]) {
+    needsRedirect = true;
+    newUrl = URL_REDIRECTS[url.slice(0, -1)];
+  }
+  // Ou sem barra no final
+  else if (!url.endsWith('/') && URL_REDIRECTS[url + '/']) {
+    needsRedirect = true;
+    newUrl = URL_REDIRECTS[url + '/'];
+  }
+  
+  console.log(`🔎 [API INTERCEPTOR] Checagem de URL: ${url} - Precisa redirecionar: ${needsRedirect ? 'SIM' : 'NÃO'}`);
+  
+  if (needsRedirect) {
     console.log(`⚠️ [API INTERCEPTOR] Redirecionando chamada de ${url} para ${newUrl}`);
     
     // Atualizar a URL de entrada com base no tipo
