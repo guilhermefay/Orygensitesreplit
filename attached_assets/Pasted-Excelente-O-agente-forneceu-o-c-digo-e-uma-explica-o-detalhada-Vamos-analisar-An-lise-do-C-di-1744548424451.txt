@@ -1,0 +1,69 @@
+Excelente! O agente forneceu o código e uma explicação detalhada. Vamos analisar:
+
+**Análise do Código:**
+
+1.  **`api/create-payment-intent.js`:**
+    *   **[+] Correto:** Inicializa Stripe e Supabase.
+    *   **[+] Correto:** Calcula o valor (`amount`) baseado no `plan`.
+    *   **[+] Perfeito:** Gera um `formId` (UUID) e **salva os dados do formulário no Supabase com status `pending_payment` ANTES de criar o PaymentIntent.** Isso é exatamente o que precisávamos.
+    *   **[+] Perfeito:** Cria o PaymentIntent no Stripe incluindo o `formId`, `plan` e `business` nos **`metadata`**. Essencial para o webhook.
+    *   **[+] Correto:** Retorna o `clientSecret` e o `formId` para o frontend.
+    *   **[+] Bom:** Inclui logs detalhados e tratamento de erro.
+    *   **[*] Observação:** Define CORS localmente; poderia ser centralizado no `server.js`, mas funciona. Usa uma função `uuidv4` customizada; poderia usar a biblioteca `uuid` se já for dependência.
+
+2.  **`api/webhook.js`:**
+    *   **[+] Correto:** Inicializa Stripe e Supabase.
+    *   **[+] Correto:** Tenta ler o `STRIPE_WEBHOOK_SECRET`.
+    *   **[+] Perfeito:** Implementa a lógica para **verificar a assinatura do webhook usando `req.rawBody`**. Isso é crucial para a segurança e parece depender de um middleware específico no `server.js` (que vamos verificar).
+    *   **[+] Correto:** Inclui fallback para não verificar assinatura se `endpointSecret` não estiver definido (bom para dev local, mas **verificação é essencial em produção**).
+    *   **[+] Perfeito:** No `switch (event.type)`:
+        *   Trata `payment_intent.succeeded`.
+        *   **Extrai o `formId` dos `metadata` do evento.**
+        *   **Usa o `formId` para atualizar o registro correspondente no Supabase para `paid`**, salvando o `payment_id` e `payment_date`. Esta é a atualização confiável que queríamos!
+        *   Trata também `payment_intent.payment_failed` (bônus útil).
+    *   **[+] Correto:** Retorna status 200 para o Stripe confirmar recebimento.
+    *   **[+] Bom:** Logs e tratamento de erro.
+
+3.  **`api/update-payment-status.js`:**
+    *   **[!] Redundante:** Este endpoint faz o que o webhook já faz (verifica o status no Stripe e atualiza o Supabase se 'succeeded'). Ele é chamado pelo *cliente* após a confirmação do pagamento no frontend.
+
+4.  **`server.js` Modificações:**
+    *   **[+] Perfeito:** O agente implementou um **middleware customizado ANTES do `express.json()`** que captura o `req.rawBody` especificamente para a rota `/api/webhook`. Isso é necessário para a verificação da assinatura do Stripe e foi feito corretamente.
+    *   **[+] Correto:** O middleware seguinte aplica `express.json()` apenas para as rotas que *não* são o webhook.
+    *   **[+] Correto:** As novas rotas (`/api/create-payment-intent`, `/api/update-payment-status`, `/api/webhook`) estão registradas.
+    *   **[*] Observação:** A rota `/env.js` parece ser para o exemplo HTML (`stripe-elements-example.html`) e provavelmente não será necessária para a aplicação React/Vite, que usa `import.meta.env`.
+
+**Análise da Estratégia e Recomendação:**
+
+O agente explicou bem os prós e contras de manter o endpoint `/api/update-payment-status` (UX imediata, redundância) versus usar apenas o webhook (simplicidade, fonte única da verdade).
+
+**Minha Recomendação:** **Simplificar e Usar Apenas o Webhook.**
+
+*   **Confiabilidade:** O webhook é a maneira mais robusta e garantida de saber que o pagamento foi confirmado pelo Stripe. Atualizar o banco de dados *apenas* com base neste evento evita inconsistências.
+*   **Simplicidade:** Remove um endpoint e a lógica duplicada de atualização do Supabase. Menos código para manter e depurar.
+*   **UX:** A confirmação do pagamento no frontend (`stripe.confirmCardPayment`) já fornece um resultado imediato (sucesso ou falha). Você pode usar esse resultado para mostrar uma mensagem de "Pagamento Aprovado!" ou "Pagamento Falhou!" ao usuário *imediatamente*. A atualização do banco de dados via webhook acontece em segundo plano (geralmente em segundos) e não precisa bloquear a interface do usuário. Se você *realmente* precisar confirmar que o webhook processou antes de liberar algo para o usuário, pode-se implementar um polling simples ou WebSockets, mas muitas vezes não é necessário.
+*   **Problema Original:** Dado que o problema inicial envolvia falhas na persistência de dados (especialmente com domínio personalizado), confiar no método servidor-a-servidor (Webhook) é a aposta mais segura.
+
+**Próximo Prompt para o Agente:**
+
+```prompt
+Agente, muito obrigado pela clareza e pelo código detalhado!
+
+A implementação do `/api/create-payment-intent` e do `/api/webhook` (incluindo a captura do `rawBody` e a atualização do Supabase via metadados) está excelente e alinhada com nossa estratégia principal.
+
+Com base na sua explicação e para garantir a maior robustez e simplicidade, **vamos seguir com a abordagem de usar exclusivamente o `/api/webhook` para atualizar o status do pagamento no Supabase.**
+
+**Por favor, faça o seguinte:**
+
+1.  **Remova o endpoint `/api/update-payment-status`:**
+    *   Delete o arquivo `api/update-payment-status.js`.
+    *   Remova a linha `app.use('/api/update-payment-status', require('./api/update-payment-status'));` do arquivo `server.js`.
+2.  **Confirmação de Limpeza (Opcional, se você se sentir seguro):** As rotas antigas (`/api/checkout-direct`, `/api/process-payment-success`, `/api/store-form-data`) parecem obsoletas agora com a nova abordagem. Podemos removê-las também do `server.js` e deletar os arquivos correspondentes? Se não tiver certeza, podemos deixar para depois.
+3.  **Ignore o Exemplo HTML:** Não precisamos mais focar no `stripe-elements-example.html` ou na rota `/env.js`. Nosso foco será a aplicação React.
+
+Após essas remoções, o backend estará pronto para a integração com o frontend React. Estaremos prontos para o **Passo 2: Implementar Stripe Elements no Frontend (React)**.
+
+Confirme quando tiver feito as remoções solicitadas.
+```
+
+Vamos aguardar a confirmação do agente e então partiremos para o frontend!
