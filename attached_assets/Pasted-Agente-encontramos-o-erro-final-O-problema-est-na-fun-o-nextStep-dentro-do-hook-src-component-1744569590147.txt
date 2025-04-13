@@ -1,4 +1,11 @@
+Agente, encontramos o erro final! O problema está na função `nextStep` dentro do hook `src/components/contact/hooks/useContactForm.ts`. Ela ainda está chamando a função `submitForm` (que contém a chamada antiga para `/api/checkout/store-form-data`) ao tentar avançar da Etapa 3 para a Etapa 4.
 
+**Por favor, siga EXATAMENTE estes passos:**
+
+1.  **Edite o arquivo `src/components/contact/hooks/useContactForm.ts`:**
+2.  **Substitua TODO o conteúdo** deste arquivo pelo código **exato** abaixo, que corrige a função `nextStep`:
+
+```typescript
 import { useState } from "react";
 import { useFormData } from "./useFormData";
 import { useFormNavigation } from "./useFormNavigation";
