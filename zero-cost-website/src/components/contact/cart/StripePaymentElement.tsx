@@ -43,6 +43,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   const { language } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    console.log('>>> StripePaymentForm - handleSubmit INICIADO');
     e.preventDefault();
 
     if (!stripe || !elements) {
@@ -55,6 +56,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 
     try {
       // Confirm the payment
+      console.log('>>> StripePaymentForm - CHAMANDO stripe.confirmPayment');
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {

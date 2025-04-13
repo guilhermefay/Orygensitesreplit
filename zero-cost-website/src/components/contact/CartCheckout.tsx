@@ -84,6 +84,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
 
   // Handler for the Test Button
   const handleTestPayment = async () => {
+    console.log('>>> CartCheckout - handleTestPayment CLICADO');
     setIsTestLoading(true);
     toast.loading(language === 'en' ? "Processing test payment..." : "Processando pagamento de teste...");
     try {
@@ -141,6 +142,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
     }
   };
 
+  console.log('>>> CartCheckout - RENDERIZADO com formId:', currentFormId);
   return (
     <div className="w-full max-w-4xl mx-auto">
       {/* Botão Voltar */}
