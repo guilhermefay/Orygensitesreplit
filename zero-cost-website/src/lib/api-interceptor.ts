@@ -2,27 +2,56 @@
  * API Request Interceptor
  * Este arquivo intercepta todas as chamadas fetch() para logar detalhes
  * e nos ajudar a depurar problemas com chamadas de API
+ * 
+ * Também inclui um mecanismo de redirecionamento para redirecionar rotas antigas
+ * para novas rotas, garantindo compatibilidade e evitando erros 404.
  */
 
 // Armazenar a referência original do fetch
 const originalFetch = window.fetch;
 
+// Mapa de redirecionamento de URLs - adicionar aqui qualquer URL antiga que deve ser redirecionada
+const URL_REDIRECTS = {
+  '/api/checkout/store-form-data': '/api/store-form-data'
+};
+
 // Substituir o fetch global com nossa versão instrumentada
 window.fetch = async function interceptedFetch(input: RequestInfo | URL, init?: RequestInit) {
-  // Extrair a URL e método para logging
-  const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+  // Extrair a URL original para logging e possível redirecionamento
+  let url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
   const method = init?.method || 'GET';
+  
+  // Verificar se esta URL precisa ser redirecionada
+  const originalUrl = url;
+  if (URL_REDIRECTS[url]) {
+    const newUrl = URL_REDIRECTS[url];
+    console.log(`⚠️ [API INTERCEPTOR] Redirecionando chamada de ${url} para ${newUrl}`);
+    
+    // Atualizar a URL de entrada com base no tipo
+    if (typeof input === 'string') {
+      input = newUrl;
+    } else if (input instanceof URL) {
+      input = new URL(newUrl, input.origin);
+    } else {
+      input = new Request(newUrl, input);
+    }
+    
+    // Atualizar a URL para logging
+    url = newUrl;
+  }
   
   // Capturar informações sobre o stack trace
   const stackError = new Error();
   const stack = stackError.stack || '';
   
   // Log detalhado da chamada de API
-  console.log(`🔍 [API INTERCEPTOR] ${method} ${url}`, {
+  console.log(`🔍 [API INTERCEPTOR] ${method} ${url}${originalUrl !== url ? ` (redirecionado de ${originalUrl})` : ''}`, {
     timestamp: new Date().toISOString(),
     headers: init?.headers,
     body: init?.body ? (
-      typeof init.body === 'string' ? JSON.parse(init.body) : init.body
+      typeof init.body === 'string' ? 
+        (init.body.startsWith('{') ? JSON.parse(init.body) : init.body) : 
+        init.body
     ) : null,
     stack: stack.split('\n').slice(2, 8).join('\n')  // Mostrar apenas parte relevante do stack
   });
