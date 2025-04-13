@@ -60,6 +60,12 @@ const FormContentContainer: React.FC<FormContentContainerProps> = ({
     fromHook: hookFormId,
     fromStorage: storedFormId
   });
+  
+  // Log para depuração do valor do useStripeRedirect
+  console.log("🔍 FormContentContainer - valores de pagamento:", {
+    isStripePayment,
+    useStripeRedirect: useStripeRedirect === true ? true : false // Força valor booleano explícito
+  });
 
   return (
     <div className="mt-6 mb-4">

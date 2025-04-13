@@ -30,8 +30,16 @@ export const useFormInitialization = (
     console.log("Modo de desenvolvimento:", isDevelopment);
   }, []);
 
+  // Configurar aqui como false explicitamente para usar o StripeElements
+  const useRedirect = false;
+  
+  console.log('🔍 useFormInitialization - RETURNING:', {
+    isStripePayment: true,
+    useStripeRedirect: useRedirect
+  });
+  
   return {
     isStripePayment: true, // Always use Stripe for payments now
-    useStripeRedirect: false // Usar o StripeElements para processar pagamentos na página
+    useStripeRedirect: useRedirect // IMPORTANTE: false para usar o StripeElements para processar pagamentos na página
   };
 };
