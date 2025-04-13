@@ -44,7 +44,7 @@ const FormContentContainer: React.FC<FormContentContainerProps> = ({
   handlePaymentBack,
   pricingConfig,
   isStripePayment = false,
-  useStripeRedirect = true,
+  useStripeRedirect = false,
   formId
 }) => {
   // Get formId from the useFormSubmission hook or localStorage

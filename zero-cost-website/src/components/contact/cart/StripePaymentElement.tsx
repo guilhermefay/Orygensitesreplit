@@ -180,13 +180,20 @@ const StripePaymentElement: React.FC<StripePaymentElementProps> = ({
         // Calculate amount in smallest currency unit (cents)
         const amountInCents = Math.round(amount * 100);
         
-        console.log('Creating payment intent with these details:');
+        console.log('[StripePaymentElement] Criando payment intent com estes detalhes:');
         console.log('- Amount:', amountInCents, 'cents');
         console.log('- Currency:', currency);
         console.log('- Form ID:', formId);
         console.log('- Plan:', plan);
+        console.log('- Form Data:', JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          business: formData.business,
+          plan: formData.selectedPlan
+        }));
         
         // Call our backend API to create a payment intent
+        console.log('[StripePaymentElement] Fazendo chamada para /api/create-payment-intent');
         const response = await fetch('/api/create-payment-intent', {
           method: 'POST',
           headers: {

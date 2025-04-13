@@ -33,7 +33,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
   onBack,
   pricingConfig,
   isStripePayment = false,
-  useStripeRedirect = true,
+  useStripeRedirect = false,
   formId,
   files,
   colorPalette,
