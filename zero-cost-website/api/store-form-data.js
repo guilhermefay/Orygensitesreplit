@@ -5,7 +5,19 @@ const { createClient } = require('@supabase/supabase-js');
 // Configurar cliente Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
-const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+// Logar informações de diagnóstico sobre as variáveis
+console.log('[SUPABASE CONFIG] URL:', supabaseUrl || 'não definida');
+console.log('[SUPABASE CONFIG] Key length:', supabaseKey ? supabaseKey.length : 'não definida');
+console.log('[SUPABASE CONFIG] Table name: form_submissions (corrigido)');
+
+// Usar valores padrão caso as variáveis de ambiente não estejam disponíveis
+const finalSupabaseUrl = supabaseUrl || 'https://gltluwhobeprwfzzcmzw.supabase.co';
+const finalSupabaseKey = supabaseKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsdGx1d2hvYmVwcndmenpjbXp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEyMjQ3MDUsImV4cCI6MjA1NjgwMDcwNX0.gzJXXUnB5THokP6yEAIHM65IOCNWGcKGAN7iKbWegws';
+
+// Criar o cliente com os valores finais
+const supabaseClient = createClient(finalSupabaseUrl, finalSupabaseKey);
+console.log('[SUPABASE CONFIG] Cliente criado com sucesso');
 
 // Função para gerar UUID válido
 function uuidv4() {

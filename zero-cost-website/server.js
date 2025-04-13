@@ -1,3 +1,10 @@
+console.log('[ENV CHECK] Iniciando server.js...');
+console.log(`[ENV CHECK] process.env.SUPABASE_URL existe? ${!!process.env.SUPABASE_URL}`);
+console.log(`[ENV CHECK] process.env.SUPABASE_KEY existe? ${!!process.env.SUPABASE_KEY}`);
+console.log(`[ENV CHECK] SUPABASE_URL: ${process.env.SUPABASE_URL ? process.env.SUPABASE_URL.substring(0, 20) + '...' : 'NÃO DEFINIDO'}`);
+console.log(`[ENV CHECK] STRIPE_SECRET_KEY existe? ${!!process.env.STRIPE_SECRET_KEY}`);
+console.log(`[ENV CHECK] VITE_STRIPE_PUBLIC_KEY existe? ${!!process.env.VITE_STRIPE_PUBLIC_KEY}`);
+
 const express = require('express');
 const { createServer } = require('http');
 const path = require('path');
