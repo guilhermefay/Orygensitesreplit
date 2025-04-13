@@ -38,7 +38,7 @@
   }
 
   html, body {
-    @apply border-border;
+    border-color: #e5e7eb; /* Usando CSS direto ao invés de classe Tailwind */
     scroll-behavior: smooth;
     overflow-x: hidden; /* Prevent horizontal scrolling */
     width: 100%;
