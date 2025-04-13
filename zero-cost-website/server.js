@@ -86,6 +86,16 @@ app.use((req, res, next) => {
   next();
 });
 
+// Middleware para compatibilidade com rotas antigas
+app.use((req, res, next) => {
+  // Redirecionar chamadas à antiga API para a nova
+  if (req.method === 'POST' && req.url === '/api/checkout/store-form-data') {
+    console.log('[COMPAT] Redirecionando /api/checkout/store-form-data -> /api/create-payment-intent');
+    req.url = '/api/create-payment-intent';
+  }
+  next();
+});
+
 // Configurar a rota principal de redirecionamento do Stripe
 // Esta é a solução recomendada para evitar erros de JavaScript
 setupStripeRedirect(app);

@@ -28,19 +28,17 @@ const TestePayment: React.FC = () => {
       // Gerar um ID único para este formulário
       const formId = `teste_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
       
-      // Armazenar os dados temporariamente (compatível com Vercel)
-      // Adaptamos para usar tanto a API do Express quanto da Vercel
-      const storeUrl = process.env.NODE_ENV === 'production' 
-        ? '/api/checkout/store-form-data' 
-        : '/api/store-form-data';
+      // Usar a nova API de create-payment-intent diretamente
+      console.log('Criando payment intent para teste com R$ 1,00');
       
-      const response = await fetch(storeUrl, {
+      const response = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           formId,
+          plan: 'test', // Use the special test plan for R$ 1,00
           formData: {
             name: formData.nome,
             email: formData.email,
@@ -50,22 +48,20 @@ const TestePayment: React.FC = () => {
             phone: '11999999999',
             description: 'Teste de pagamento R$ 1,00',
             testPayment: true
-          },
-          plan: formData.plano,
-          finalContent: 'Conteúdo de teste para pagamento de R$ 1,00'
+          }
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Erro ao armazenar dados temporariamente');
+        throw new Error('Erro ao criar payment intent para teste');
       }
-
-      // Redirecionar para a sessão de pagamento com R$ 1,00 (compatível com Vercel)
-      const redirectUrl = process.env.NODE_ENV === 'production'
-        ? `/api/checkout/redirect?amount=100&currency=brl&plan=${formData.plano}&formId=${formId}&test=true`
-        : `/api/checkout-redirect?amount=100&currency=brl&plan=${formData.plano}&formId=${formId}&test=true`;
-      console.log('Redirecionando para:', redirectUrl);
-      window.location.href = redirectUrl;
+      
+      // Em vez de redirecionar, vamos para a página de sucesso diretamente (simulando pagamento)
+      const data = await response.json();
+      console.log('Payment intent criado com sucesso:', data);
+      
+      // Redirecionar para página de sucesso
+      window.location.href = `/success?session_id=${data.formId}&test=true`;
     } catch (err: any) {
       console.error('Erro:', err);
       setError(err.message || 'Ocorreu um erro ao processar o pagamento');
