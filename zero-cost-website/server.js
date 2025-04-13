@@ -152,6 +152,22 @@ app.get('/api/diagnostics', (req, res) => {
 // Rota de teste para Supabase
 app.get('/api/supabase-test', require('./api/supabase-test'));
 
+// Rota para servir as variáveis de ambiente para o frontend
+app.get('/env.js', (req, res) => {
+  // Ler o arquivo env.js
+  const envFilePath = path.join(__dirname, 'public', 'env.js');
+  let envFileContent = fs.readFileSync(envFilePath, 'utf8');
+  
+  // Substituir o placeholder pela variável de ambiente real
+  envFileContent = envFileContent.replace('{{VITE_STRIPE_PUBLIC_KEY}}', process.env.VITE_STRIPE_PUBLIC_KEY || '');
+  
+  // Definir o tipo de conteúdo como JavaScript
+  res.set('Content-Type', 'application/javascript');
+  
+  // Enviar o conteúdo com as substituições
+  res.send(envFileContent);
+});
+
 // Definir a porta para o servidor
 const PORT = process.env.PORT || 5000;
 

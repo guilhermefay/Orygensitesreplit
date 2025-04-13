@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagamento Realizado - Orygensites</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/confetti-js@0.0.18/dist/index.min.js"></script>
+  <script src="/env.js"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+  <canvas id="confetti-canvas"></canvas>
+  
+  <div class="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+    <div class="mb-6 text-green-500">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+    
+    <h1 class="text-2xl font-bold text-gray-800 mb-4">Pagamento Realizado com Sucesso!</h1>
+    
+    <p class="text-gray-600 mb-2" id="payment-id-display">Seu pagamento foi confirmado.</p>
+    <p class="text-gray-600 mb-6" id="business-name-display">Obrigado pela sua compra!</p>
+    
+    <div class="mb-6">
+      <a href="/" class="inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+        Voltar para a Página Inicial
+      </a>
+    </div>
+    
+    <p class="text-sm text-gray-500">
+      Se tiver alguma dúvida, entre em contato conosco pelo email <a href="mailto:suporte@orygensites.com" class="text-indigo-600 hover:underline">suporte@orygensites.com</a>
+    </p>
+  </div>
+  
+  <script>
+    // Verificar se temos algum payment_intent na URL
+    const queryParams = new URLSearchParams(window.location.search);
+    const paymentIntentId = queryParams.get('payment_intent');
+    const paymentStatus = queryParams.get('redirect_status');
+    const formId = localStorage.getItem('stripe_form_id');
+    
+    // Iniciar confetti
+    function startConfetti() {
+      const confettiSettings = { target: 'confetti-canvas', max: 200, size: 1.5, animate: true, props: ['circle', 'square', 'triangle', 'line'], colors: [[165,104,246],[230,61,135],[0,199,228],[253,214,126]], clock: 25 };
+      const confetti = new ConfettiGenerator(confettiSettings);
+      confetti.render();
+      
+      // Parar após 8 segundos
+      setTimeout(() => {
+        confetti.clear();
+      }, 8000);
+    }
+    
+    // Atualizar o status do pagamento no backend
+    async function updatePaymentStatus(paymentIntentId, formId) {
+      if (!paymentIntentId || !formId) {
+        console.error('Faltando paymentIntentId ou formId');
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/update-payment-status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            paymentIntentId: paymentIntentId,
+            formId: formId
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Erro ao atualizar status do pagamento');
+        }
+        
+        console.log('Status do pagamento atualizado com sucesso:', data);
+        
+        // Atualizar a página com os dados
+        if (data.business) {
+          document.getElementById('business-name-display').textContent = `Obrigado por escolher ${data.business}!`;
+        }
+        
+        document.getElementById('payment-id-display').textContent = `ID do Pagamento: ${paymentIntentId.substring(0, 8)}...`;
+        
+        // Limpar o formId do localStorage após uso
+        localStorage.removeItem('stripe_form_id');
+        
+        return data;
+        
+      } catch (error) {
+        console.error('Erro ao atualizar status de pagamento:', error);
+      }
+    }
+    
+    // Verificar o pagamento ao carregar a página
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Começar efeito de confetti imediatamente
+      startConfetti();
+      
+      // Verificar se temos um paymentIntent e formId para processar
+      if (paymentIntentId && formId && paymentStatus === 'succeeded') {
+        await updatePaymentStatus(paymentIntentId, formId);
+      }
+    });
+  </script>
+</body>
+</html>
