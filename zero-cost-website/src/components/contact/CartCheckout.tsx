@@ -7,11 +7,10 @@ import PriceDisplay from "./cart/PriceDisplay";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { ContactFormData, FileData } from "./types";
-import PayPalCheckout from "./PayPalCheckout";
 import { PricingConfiguration } from "@/lib/config/pricing";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-// Lazy load apenas o StripePaymentElement (removendo imports antigos/não utilizados)
+// Lazy load apenas o StripePaymentElement
 const StripePaymentElement = lazy(() => import('./cart/StripePaymentElement'));
 
 interface CartCheckoutProps {
@@ -114,96 +113,83 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
             />
           </div>
 
-          {/* Payment Buttons */}
+          {/* Payment Section - Simplificado, apenas Stripe */}
           <div className="mt-8 space-y-4">
-            {isStripePayment ? (
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <h4 className="text-lg font-medium mb-4">
-                  {language === 'en' ? 'Pay with Card' : 'Pagar com Cartão'}
-                </h4>
-                
-                {/* Stripe Payment Element com carregamento lazy */}
-                <Suspense fallback={
-                  <div className="flex flex-col items-center justify-center p-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-2"></div>
-                    <p className="text-sm text-gray-600">
-                      {language === 'en' ? 'Loading payment form...' : 'Carregando formulário de pagamento...'}
-                    </p>
-                  </div>
-                }>
-                  <StripePaymentElement 
-                    amount={price.totalPrice}
-                    currency={effectivePricingConfig.currency.toLowerCase()}
-                    formData={formData}
-                    onSuccess={onPaymentSuccess}
-                    formId={formId || ''}
-                    files={files}
-                    colorPalette={colorPalette}
-                    finalContent={finalContent}
-                    plan={selectedPlan}
-                  />
-                </Suspense>
-
-                {/* Botão para teste com 1 real */}
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <button
-                    onClick={async () => {
-                      try {
-                        console.log("MODO TESTE: Iniciando pagamento de teste de R$ 1,00...");
-                        console.log("Form ID para teste:", formId);
-                        
-                        // Configurar identificador único para o formulário se não existir
-                        const effectiveFormId = formId || `test_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-                        
-                        console.log("ID efetivo para teste:", effectiveFormId);
-                        
-                        // Create a test payment intent
-                        const createResponse = await fetch('/api/create-payment-intent', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({
-                            plan: 'test', // Use the test plan which is R$ 1,00
-                            formData: formData,
-                            formId: effectiveFormId // Importante: passar o formId explicitamente
-                          }),
-                        });
-                        
-                        if (!createResponse.ok) {
-                          throw new Error("Falha ao criar pagamento de teste");
-                        }
-                        
-                        const data = await createResponse.json();
-                        console.log("Resposta do pagamento de teste:", data);
-                        
-                        // Redirect to success page directly for testing
-                        onPaymentSuccess(data.formId || effectiveFormId);
-                        
-                        console.log("Pagamento de teste processado com sucesso");
-                      } catch (error) {
-                        console.error("Erro ao processar pagamento de teste:", error);
-                        alert("Ocorreu um erro ao processar o pagamento de teste. Por favor, tente novamente.");
-                      }
-                    }}
-                    className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition-all flex items-center justify-center"
-                  >
-                    Testar com R$ 1,00
-                  </button>
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <h4 className="text-lg font-medium mb-4">
+                {language === 'en' ? 'Pay with Card' : 'Pagar com Cartão'}
+              </h4>
+              
+              {/* Stripe Payment Element com carregamento lazy */}
+              <Suspense fallback={
+                <div className="flex flex-col items-center justify-center p-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-2"></div>
+                  <p className="text-sm text-gray-600">
+                    {language === 'en' ? 'Loading payment form...' : 'Carregando formulário de pagamento...'}
+                  </p>
                 </div>
+              }>
+                <StripePaymentElement 
+                  amount={price.totalPrice}
+                  currency={effectivePricingConfig.currency.toLowerCase()}
+                  formData={formData}
+                  onSuccess={onPaymentSuccess}
+                  formId={formId || ''}
+                  files={files}
+                  colorPalette={colorPalette}
+                  finalContent={finalContent}
+                  plan={selectedPlan}
+                />
+              </Suspense>
+
+              {/* Botão para teste com 1 real */}
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <button
+                  onClick={async () => {
+                    try {
+                      console.log("MODO TESTE: Iniciando pagamento de teste de R$ 1,00...");
+                      console.log("Form ID para teste:", formId);
+                      
+                      // Configurar identificador único para o formulário se não existir
+                      const effectiveFormId = formId || `test_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+                      
+                      console.log("ID efetivo para teste:", effectiveFormId);
+                      
+                      // Create a test payment intent
+                      const createResponse = await fetch('/api/create-payment-intent', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          plan: 'test', // Use the test plan which is R$ 1,00
+                          formData: formData,
+                          formId: effectiveFormId // Importante: passar o formId explicitamente
+                        }),
+                      });
+                      
+                      if (!createResponse.ok) {
+                        throw new Error("Falha ao criar pagamento de teste");
+                      }
+                      
+                      const data = await createResponse.json();
+                      console.log("Resposta do pagamento de teste:", data);
+                      
+                      // Redirect to success page directly for testing
+                      onPaymentSuccess(data.formId || effectiveFormId);
+                      
+                      console.log("Pagamento de teste processado com sucesso");
+                    } catch (error) {
+                      console.error("Erro ao processar pagamento de teste:", error);
+                      alert("Ocorreu um erro ao processar o pagamento de teste. Por favor, tente novamente.");
+                    }
+                  }}
+                  className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition-all flex items-center justify-center"
+                >
+                  Testar com R$ 1,00
+                </button>
               </div>
-            ) : (
-              <PayPalCheckout
-                selectedPlan={selectedPlan}
-                onBack={onBack}
-                onSuccess={onPaymentSuccess}
-                formData={formData}
-                files={files}
-                colorPalette={colorPalette}
-                finalContent={finalContent}
-                pricingConfig={effectivePricingConfig}
-              />
-            )}
+            </div>
           </div>
         </div>
       </div>

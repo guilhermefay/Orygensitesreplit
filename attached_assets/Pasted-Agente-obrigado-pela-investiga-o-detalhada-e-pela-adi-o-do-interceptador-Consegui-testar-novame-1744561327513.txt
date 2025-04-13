@@ -1,0 +1,23 @@
+Agente, obrigado pela investigação detalhada e pela adição do interceptador.
+
+Consegui testar novamente e confirmo:
+1.  O erro 404 em `/api/checkout/store-form-data` acontece **exatamente** quando clico no botão azul "Pagar com Cartão de Crédito" que aparece na Etapa 4 (Pagamento).
+2.  Após clicar nesse botão azul, a interface volta para a Etapa 3 (Identidade Visual) e o erro 404 aparece no console.
+
+Isso é estranho, porque o código do `CartCheckout.tsx` que você me mostrou anteriormente **não continha** esse botão azul com um `onClick` próprio. Ele deveria apenas renderizar o `<StripePaymentElement />` (que tem seu próprio botão interno).
+
+**Para resolver isso de forma definitiva, por favor, faça o seguinte:**
+
+1.  **Edite `src/components/contact/CartCheckout.tsx`:**
+    *   Dentro do bloco condicional `isStripePayment ? (...) : (...)`, **remova QUALQUER botão** que tenha o texto "Pagar com Cartão de Crédito" ou similar e que tenha um `onClick` handler associado diretamente a ele.
+    *   **GARANTA** que a única coisa renderizada dentro do `<Suspense>` quando `isStripePayment` é `true` seja o componente `<StripePaymentElement {...props} />`.
+    *   Mantenha o botão verde "Testar com R$ 1,00" como está, pois ele parece funcionar corretamente para simulação.
+2.  **Remova Código Não Utilizado (PayPal):** Já que descontinuamos o PayPal, remova completamente a seção `: (<PayPalCheckout ... />)` do `CartCheckout.tsx` para simplificar. O componente agora só precisa lidar com o Stripe Elements.
+3.  **Confirme a Remoção de Arquivos:** Confirme novamente que os arquivos `SimpleStripeRedirect.tsx`, `DirectStripeButton.tsx`, `StripePaymentButton.tsx` e `StripeElementsProvider.tsx` foram realmente excluídos do projeto.
+
+**Após fazer essas alterações:**
+
+*   Mostre o conteúdo **final e completo** do arquivo `src/components/contact/CartCheckout.tsx`.
+*   Reinicie o servidor.
+
+Não adicione nenhum middleware de compatibilidade no backend. Queremos garantir que o frontend esteja chamando apenas as APIs corretas.

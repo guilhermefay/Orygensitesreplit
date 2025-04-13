@@ -100,9 +100,6 @@ app.use('/api/store-form-data', require('./api/store-form-data'));
 app.use('/api/supabase-check', require('./api/supabase-check'));
 app.use('/api/create-payment-intent', require('./api/create-payment-intent'));
 app.use('/api/webhook', require('./api/webhook'));
-
-// Registrar rota de compatibilidade para o endpoint antigo
-app.use('/api/checkout/store-form-data', require('./api/checkout/store-form-data'));
 console.log('✅ Todas as rotas de API registradas corretamente');
 
 // Adicionar mais logging para depuração
