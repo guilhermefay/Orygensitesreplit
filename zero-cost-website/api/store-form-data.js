@@ -3,21 +3,38 @@ const { formDataStorage, saveStorage } = require('./shared-storage');
 const { createClient } = require('@supabase/supabase-js');
 
 // Configurar cliente Supabase
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
+const SUPABASE_URL_FALLBACK = "https://gltluwhobeprwfzzcmzw.supabase.co";
+const SUPABASE_KEY_FALLBACK = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsdGx1d2hvYmVwcndmenpjbXp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEyMjQ3MDUsImV4cCI6MjA1NjgwMDcwNX0.gzJXXUnB5THokP6yEAIHM65IOCNWGcKGAN7iKbWegws";
 
-// Logar informações de diagnóstico sobre as variáveis
-console.log('[SUPABASE CONFIG] URL:', supabaseUrl || 'não definida');
-console.log('[SUPABASE CONFIG] Key length:', supabaseKey ? supabaseKey.length : 'não definida');
-console.log('[SUPABASE CONFIG] Table name: form_submissions (corrigido)');
+let supabaseUrl = process.env.SUPABASE_URL;
+let supabaseKey = process.env.SUPABASE_KEY; // Usar a chave ANON pública aqui
+let usingFallback = false;
 
-// Usar valores padrão caso as variáveis de ambiente não estejam disponíveis
-const finalSupabaseUrl = supabaseUrl || 'https://gltluwhobeprwfzzcmzw.supabase.co';
-const finalSupabaseKey = supabaseKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsdGx1d2hvYmVwcndmenpjbXp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEyMjQ3MDUsImV4cCI6MjA1NjgwMDcwNX0.gzJXXUnB5THokP6yEAIHM65IOCNWGcKGAN7iKbWegws';
+if (!supabaseUrl) {
+  console.warn('[SUPABASE FALLBACK] Variável SUPABASE_URL não encontrada, usando fallback.');
+  supabaseUrl = SUPABASE_URL_FALLBACK;
+  usingFallback = true;
+}
+
+if (!supabaseKey) {
+  console.warn('[SUPABASE FALLBACK] Variável SUPABASE_KEY não encontrada, usando fallback (chave ANON).');
+  supabaseKey = SUPABASE_KEY_FALLBACK;
+  usingFallback = true;
+}
+
+// Verificar se temos valores válidos após tentar ler do env e do fallback
+if (!supabaseUrl || !supabaseKey) {
+  console.error('[SUPABASE FATAL] URL ou Chave Supabase inválidas mesmo após fallback. Impossível continuar.');
+  throw new Error('Configuração inválida do Supabase.');
+}
+
+if (usingFallback) {
+    console.warn('[SUPABASE FALLBACK] Usando URL/Key Supabase fallback hardcoded!');
+}
 
 // Criar o cliente com os valores finais
-const supabaseClient = createClient(finalSupabaseUrl, finalSupabaseKey);
-console.log('[SUPABASE CONFIG] Cliente criado com sucesso');
+const supabaseClient = createClient(supabaseUrl, supabaseKey);
+console.log('[SUPABASE CONFIG] Cliente Supabase criado com sucesso.');
 
 // Função para gerar UUID válido
 function uuidv4() {
