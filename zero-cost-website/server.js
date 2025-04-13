@@ -97,6 +97,7 @@ setupCreatePaymentIntent(app);
 app.use('/api/checkout-direct', require('./api/checkout-direct'));
 app.use('/api/process-payment-success', require('./api/process-payment-success'));
 app.use('/api/store-form-data', require('./api/store-form-data'));
+app.use('/api/checkout/store-form-data', require('./api/store-form-data')); // Rota antiga, manter para compatibilidade
 app.use('/api/supabase-check', require('./api/supabase-check'));
 app.use('/api/create-payment-intent', require('./api/create-payment-intent'));
 app.use('/api/webhook', require('./api/webhook'));
