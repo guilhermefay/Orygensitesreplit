@@ -1,0 +1,35 @@
+Agente, o erro 404 em `/api/checkout/store-form-data` **AINDA ACONTECE** ao clicar no botão de pagamento final na Etapa 4, e a interface volta para a Etapa 3. O interceptador não resolveu ou não está pegando a chamada.
+
+Precisamos depurar isso de forma MUITO precisa. Esqueça as buscas genéricas. Faça **EXATAMENTE** o seguinte:
+
+1.  **Edite `src/components/contact/ContactForm.tsx`:**
+    *   Encontre a função `handleFormSubmitWithTracking`.
+    *   Adicione `console.log('>>> ContactForm - handleFormSubmitWithTracking INICIADO');` logo no início da função.
+    *   Adicione `console.log('>>> ContactForm - CHAMANDO submitForm');` imediatamente antes da linha que chama `await submitForm(...)`.
+    *   Adicione `console.log('>>> ContactForm - CHAMANDO nextStep');` imediatamente antes da linha que chama `nextStep(...)`.
+
+2.  **Edite `src/components/contact/hooks/useContactForm.ts`:**
+    *   Encontre a função `nextStep`.
+    *   Adicione `console.log('>>> useContactForm - nextStep INICIADO para step:', step);` logo no início da função.
+    *   Adicione `console.log('>>> useContactForm - nextStep CHAMANDO goToNextStep');` imediatamente antes da linha `goToNextStep();`.
+
+3.  **Edite `src/components/contact/hooks/useFormSubmission.ts`:**
+    *   Encontre a função `submitForm`.
+    *   Adicione `console.log('>>> useFormSubmission - submitForm INICIADO');` logo no início da função.
+    *   **IMPORTANTE:** Adicione `console.log('>>> useFormSubmission - PRESTES A FAZER FETCH PARA:', url);` **imediatamente antes** de QUALQUER chamada `fetch` dentro desta função (substitua `url` pela variável que contém a URL do fetch). Se houver a chamada para `store-form-data`, este log VAI aparecer.
+
+4.  **Edite `src/components/contact/CartCheckout.tsx`:**
+    *   Adicione `console.log('>>> CartCheckout - RENDERIZADO com formId:', currentFormId);` logo antes da linha `return (`.
+    *   Encontre a função `handleTestPayment`.
+    *   Adicione `console.log('>>> CartCheckout - handleTestPayment CLICADO');` no início da função.
+
+5.  **Edite `src/components/contact/cart/StripePaymentElement.tsx`:**
+    *   Dentro do `StripePaymentForm`, encontre a função `handleSubmit`.
+    *   Adicione `console.log('>>> StripePaymentForm - handleSubmit INICIADO');` no início da função.
+    *   Adicione `console.log('>>> StripePaymentForm - CHAMANDO stripe.confirmPayment');` imediatamente antes da linha `await stripe.confirmPayment(...)`.
+
+6.  **Rebuild e Reinicie:** Execute `cd zero-cost-website && npm run build` e reinicie o servidor.
+
+7.  **Peça o Teste e os Logs:** Diga-me para limpar o console do navegador, refazer o teste passo a passo (Etapa 1 -> 2 -> 3 -> 4 -> Clicar no botão de pagamento final) e copiar **ABSOLUTAMENTE TUDO** que aparecer no console do navegador, desde o início do teste até o erro 404 ocorrer.
+
+Com esses logs super específicos, veremos exatamente qual função está sendo chamada e qual delas está tentando fazer o `fetch` para a URL errada.

@@ -24,6 +24,7 @@ export const useFormSubmission = () => {
     },
     onSuccess?: (businessName: string) => void
   ) => {
+    console.log('>>> useFormSubmission - submitForm INICIADO');
     setIsSubmitting(true);
     console.log("Submitting form data to Supabase...", formData);
     console.log("Content being submitted:", content);

@@ -58,6 +58,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
 
   // Handle form submission
   const handleFormSubmitWithTracking = async (e: React.FormEvent) => {
+    console.log('>>> ContactForm - handleFormSubmitWithTracking INICIADO');
     e.preventDefault();
     
     // If we're on step 3 (visual identity), validate and submit to Supabase before advancing
@@ -87,6 +88,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
         // Show loading toast
         toast.loading(language === 'en' ? "Saving your information..." : "Salvando suas informações...");
         
+        console.log('>>> ContactForm - CHAMANDO submitForm');
         const submitted = await submitForm(formSubmissionData);
         
         if (submitted) {
@@ -105,6 +107,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
             console.warn("No formId received after submission");
           }
           
+          console.log('>>> ContactForm - CHAMANDO nextStep');
           nextStep(e as unknown as React.MouseEvent);
         } else {
           // Dismiss loading toast and show error

@@ -54,6 +54,7 @@ export const useContactForm = (
 
   // Function to move to next step - CORRECTED LOGIC
   const nextStep = (e: React.MouseEvent) => {
+    console.log('>>> useContactForm - nextStep INICIADO para step:', step);
     e.preventDefault();
 
     // --- VALIDATION BEFORE ADVANCING ---
@@ -77,6 +78,7 @@ export const useContactForm = (
     // when step becomes 4.
     if (step < totalSteps) {
       console.log(`useContactForm: Avançando do passo ${step} para ${step + 1}`);
+      console.log('>>> useContactForm - nextStep CHAMANDO goToNextStep');
       goToNextStep(); // Use the correct navigation function
       return true;
     }
