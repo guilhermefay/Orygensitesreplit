@@ -13,13 +13,21 @@ import { ContactFormData, FileData } from '../types';
 // Get the Stripe public key from environment variables
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
 
+// Log para depuração
+console.log('[STRIPE] Chave pública disponível?', !!stripePublicKey);
+console.log('[STRIPE] Chave pública (primeiros caracteres):', stripePublicKey ? stripePublicKey.substring(0, 10) + '...' : 'NÃO DEFINIDA');
+
+// Usar fallback para desenvolvimento/teste se necessário
+const finalStripeKey = stripePublicKey || 'pk_test_51OzEGcBL7JbfJBGnpnuFTzG66XCbiGF3Bqf4fxrSWBt3N9M7lDnTSOkqnYb7QFdnWjQiuDcxgAzEfNoDwuYAu9gw00YhGbxQEV';
+
 // Initialize the Stripe object outside of the component to avoid re-creating it on every render
 let stripePromise: Promise<any> | null = null;
 
-if (stripePublicKey) {
-  stripePromise = loadStripe(stripePublicKey);
-} else {
-  console.error('Missing Stripe public key. Please check your environment variables.');
+try {
+  stripePromise = loadStripe(finalStripeKey);
+  console.log('[STRIPE] Stripe inicializado com sucesso');
+} catch (error) {
+  console.error('[STRIPE] Erro ao inicializar Stripe:', error);
 }
 
 interface StripePaymentFormProps {
