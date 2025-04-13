@@ -11,7 +11,7 @@ import PayPalCheckout from "./PayPalCheckout";
 import { PricingConfiguration } from "@/lib/config/pricing";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-// Lazy load the StripePaymentElement
+// Lazy load apenas o StripePaymentElement (removendo imports antigos/não utilizados)
 const StripePaymentElement = lazy(() => import('./cart/StripePaymentElement'));
 
 interface CartCheckoutProps {
