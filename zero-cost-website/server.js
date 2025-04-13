@@ -24,11 +24,41 @@ REQUIRED_ENV_VARS.forEach(envVar => {
 // Cria uma aplicação Express
 const app = express();
 
+// Middleware para capturar o corpo bruto da requisição para webhooks do Stripe
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/webhook') {
+    // Para webhook do Stripe, precisamos do corpo bruto para verificar assinatura
+    let rawBody = '';
+    req.setEncoding('utf8');
+    
+    req.on('data', chunk => {
+      rawBody += chunk;
+    });
+    
+    req.on('end', () => {
+      req.rawBody = rawBody;
+      
+      // Parsear manualmente como JSON se o content-type for application/json
+      if (req.headers['content-type'] === 'application/json') {
+        try {
+          req.body = JSON.parse(rawBody);
+        } catch (e) {
+          console.error('Erro ao parsear corpo JSON:', e);
+        }
+      }
+      
+      next();
+    });
+  } else {
+    next();
+  }
+});
+
 // Configuração CORS completamente permissiva para ambiente de desenvolvimento
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, stripe-signature');
   
   // Permitir preflight requests OPTIONS
   if (req.method === 'OPTIONS') {
@@ -39,8 +69,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// Configurar middlewares
-app.use(express.json());
+// Configurar middlewares - Não usar para webhook
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/webhook') {
+    // Para o webhook do Stripe, já tratamos o corpo no middleware anterior
+    next();
+  } else {
+    // Para outras rotas, usar o middleware padrão
+    express.json()(req, res, next);
+  }
+});
 
 // Adicionar logging para todas as requisições
 app.use((req, res, next) => {
@@ -60,6 +98,9 @@ app.use('/api/checkout-direct', require('./api/checkout-direct'));
 app.use('/api/process-payment-success', require('./api/process-payment-success'));
 app.use('/api/store-form-data', require('./api/store-form-data'));
 app.use('/api/supabase-check', require('./api/supabase-check'));
+app.use('/api/create-payment-intent', require('./api/create-payment-intent'));
+app.use('/api/update-payment-status', require('./api/update-payment-status'));
+app.use('/api/webhook', require('./api/webhook'));
 console.log('✅ Todas as rotas de API registradas corretamente');
 
 // Adicionar mais logging para depuração

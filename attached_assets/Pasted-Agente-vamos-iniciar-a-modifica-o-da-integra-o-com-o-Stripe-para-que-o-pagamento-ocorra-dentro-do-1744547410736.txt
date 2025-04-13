@@ -1,0 +1,18 @@
+Agente, vamos iniciar a modificação da integração com o Stripe para que o pagamento ocorra dentro do nosso formulário, sem redirecionar o usuário. Usaremos o Stripe Elements para isso.
+
+**Sua tarefa agora é preparar o backend (Express) para esta nova abordagem:**
+
+1.  **Crie um novo arquivo de rota/endpoint, por exemplo, `api/create-payment-intent.js`.**
+2.  **Registre esta nova rota no seu `server.js` principal.** Use um caminho como `/api/create-payment-intent`. Certifique-se de que as configurações de CORS existentes (permitindo `*` ou o domínio do frontend) se apliquem a esta nova rota.
+3.  **Dentro do novo endpoint `/api/create-payment-intent`:**
+    *   Receba os dados necessários do frontend via `req.body`. No mínimo, você precisará de informações para calcular o `amount` (valor do pagamento, talvez baseado em um `planId` ou `planName`) e os dados do formulário que precisam ser salvos.
+    *   **Salve os dados do formulário recebidos no Supabase:** Antes de interagir com o Stripe, insira os dados do formulário na sua tabela `form_submissions` (ou equivalente). Inclua um campo de status com um valor inicial como `'pending_payment'`. Capture o `id` (ou um identificador único) deste registro recém-criado no Supabase. Vamos chamá-lo de `formId`.
+    *   **Crie um PaymentIntent do Stripe:** Use a biblioteca `stripe` (Node.js) para chamar `stripe.paymentIntents.create()`. Passe os seguintes parâmetros essenciais:
+        *   `amount`: O valor do pagamento em centavos (ex: 1000 para R$10,00). Calcule com base no plano selecionado.
+        *   `currency`: 'brl' (ou a moeda apropriada).
+        *   `metadata`: Um objeto contendo `{ formId: formId }`. Isso é **crucial** para vincular o pagamento ao registro do formulário no Supabase mais tarde (via webhook).
+    *   **Responda ao Frontend:** Se a criação do PaymentIntent for bem-sucedida, retorne um JSON contendo o `client_secret` do PaymentIntent e também o `formId` que você gerou/obteve do Supabase. Ex: `res.json({ clientSecret: paymentIntent.client_secret, formId: formId });`.
+    *   **Tratamento de Erros:** Inclua blocos `try...catch` para lidar com erros durante a inserção no Supabase ou a criação do PaymentIntent. Retorne um status de erro apropriado (ex: 500) e uma mensagem de erro em caso de falha.
+
+**Resumo do Fluxo deste Endpoint:**
+Frontend envia dados (plano, dados do form) -> Backend salva no Supabase (status 'pending') -> Backend cria PaymentIntent no Stripe com `formId` -> Backend retorna `clientSecret` e `formId` ao Frontend.
