@@ -32,6 +32,6 @@ export const useFormInitialization = (
 
   return {
     isStripePayment: true, // Always use Stripe for payments now
-    useStripeRedirect: true // Força o uso do redirecionamento em vez dos Elements
+    useStripeRedirect: false // Usar o StripeElements para processar pagamentos na página
   };
 };
