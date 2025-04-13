@@ -1,4 +1,12 @@
+Agente, encontramos o problema definitivo no arquivo `src/components/contact/CartCheckout.tsx`. A versão atual no Replit ainda contém um botão "Pagar com Cartão de Crédito" com uma função `onClick` que chama a API antiga `/api/checkout/store-form-data`.
 
+**Por favor, siga EXATAMENTE estes passos:**
+
+1.  Abra o arquivo `src/components/contact/CartCheckout.tsx`.
+2.  **APAGUE TODO o conteúdo atual** desse arquivo.
+3.  **COLE o seguinte código EXATO** no lugar:
+
+```typescript
 import React, { useState, Suspense, lazy } from "react";
 import OrderSummary from "./cart/OrderSummary";
 import PlanBenefits from "./cart/PlanBenefits";
