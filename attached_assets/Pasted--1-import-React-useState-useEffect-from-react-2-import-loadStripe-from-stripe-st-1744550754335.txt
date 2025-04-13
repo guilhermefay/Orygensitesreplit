@@ -1,0 +1,787 @@
+ 1 | import React, { useState, useEffect } from 'react';
+ 2 | import { loadStripe } from '@stripe/stripe-js';
+ 3 | import {
+ 4 |   Elements,
+ 5 |   PaymentElement,
+ 6 |   useStripe,
+ 7 |   useElements
+ 8 | } from '@stripe/react-stripe-js';
+ 9 | import { toast } from "sonner";
+10 | import { useLanguage } from '@/contexts/LanguageContext';
+11 | import { ContactFormData, FileData } from '../types';
+12 |
+13 | // Get the Stripe public key from environment variables
+14 | const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+15 |
+16 | // Initialize the Stripe object outside of the component to avoid re-creating it on every render
+17 | let stripePromise: Promise<any> | null = null;
+18 |
+19 | if (stripePublicKey) {
+20 |   stripePromise = loadStripe(stripePublicKey);
+21 | } else {
+22 |   console.error('Missing Stripe public key. Please check your environment variables.');
+23 | }
+24 |
+25 | interface StripePaymentFormProps {
+26 |   clientSecret: string;
+27 |   onSuccess: (paymentIntentId: string, formId: string) => void; // MODIFIED: Pass formId here
+28 |   businessName: string;
+29 |   formId: string; // ADDED: Need formId here
+30 | }
+31 |
+32 | // Inner form component that uses the Stripe hooks
+33 | const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
+34 |   clientSecret,
+35 |   onSuccess,
+36 |   businessName,
+37 |   formId // ADDED
+38 | }) => {
+39 |   const stripe = useStripe();
+40 |   const elements = useElements();
+41 |   const [isLoading, setIsLoading] = useState(false);
+42 |   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+43 |   const { language } = useLanguage();
+44 |
+45 |   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+46 |     e.preventDefault();
+47 |
+48 |     if (!stripe || !elements) {
+49 |       return;
+50 |     }
+51 |
+52 |     setIsLoading(true);
+53 |     setErrorMessage(null);
+54 |
+55 |     try {
+56 |       // Confirm the payment
+57 |       const { error, paymentIntent } = await stripe.confirmPayment({
+58 |         elements,
+59 |         confirmParams: {
+60 |           // Remove return_url or set it to a non-processing page if needed
+61 |           // Since we handle success client-side, return_url might not be essential here,
+62 |           // but Stripe might still require it for certain flows (like 3D Secure).
+63 |           // Let's redirect back to a generic success page, but pass our formId
+64 |           return_url: `${window.location.origin}/success?formId=${formId}&source=stripe_redirect`,
+65 |         },
+66 |         redirect: 'if_required', // Handle redirects like 3D Secure
+67 |       });
+68 |
+69 |       // This point will only be reached if no redirect occurred or if redirect: 'if_required' handles it.
+70 |       // If a redirect *does* happen (e.g., 3D Secure), the user comes back to `return_url`.
+71 |       // The SuccessPage will then handle showing the success message based on the formId.
+72 |
+73 |       if (error) {
+74 |         console.error('Payment error:', error);
+75 |         setErrorMessage(
+76 |           error.message ||
+77 |           (language === 'en'
+78 |             ? 'An error occurred during payment processing.'
+79 |             : 'Ocorreu um erro durante o processamento do pagamento.')
+80 |         );
+81 |         toast.error(error.message || 'Payment failed. Please try again.');
+82 |       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+83 |         // ---------> PONTO CRÍTICO <---------
+84 |         // Pagamento bem-sucedido NO NAVEGADOR (antes do webhook).
+85 |         console.log('Payment succeeded client-side:', paymentIntent);
+86 |         toast.success(
+87 |           language === 'en'
+88 |             ? 'Payment successful! Finalizing...'
+89 |             : 'Pagamento realizado com sucesso! Finalizando...'
+90 |         );
+91 |         // **NÃO FAZEMOS NADA COM SUPABASE AQUI**
+92 |         // Apenas chamamos o onSuccess para que o CartCheckout possa navegar
+93 |         // Passamos o paymentIntent.id (embora não seja mais estritamente necessário) e o formId
+94 |         onSuccess(paymentIntent.id, formId);
+95 |         // ---------> FIM PONTO CRÍTICO <---------
+96 |       } else {
+97 |         console.log('Payment status (no redirect):', paymentIntent?.status);
+98 |         setErrorMessage(
+99 |           language === 'en'
+100|             ? 'Payment is being processed. Please wait...'
+101|             : 'O pagamento está sendo processado. Por favor, aguarde...'
+102|         );
+103|       }
+104|     } catch (error: any) {
+105|       console.error('Error during payment confirmation:', error);
+106|       setErrorMessage(
+107|         error.message ||
+108|         (language === 'en'
+109|           ? 'An unexpected error occurred.'
+110|           : 'Ocorreu um erro inesperado.')
+111|       );
+112|     } finally {
+113|       setIsLoading(false);
+114|     }
+115|   };
+116|
+117|   return (
+118|     <form onSubmit={handleSubmit} className="space-y-4">
+119|       <PaymentElement />
+120|
+121|       {errorMessage && (
+122|         <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
+123|           {errorMessage}
+124|         </div>
+125|       )}
+126|
+127|       <button
+128|         type="submit"
+129|         disabled={!stripe || isLoading}
+130|         className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+131|       >
+132|         {isLoading ? (
+133|           <>
+134|             <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+135|               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+136|               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+137|             </svg>
+138|             {language === 'en' ? 'Processing...' : 'Processando...'}
+139|           </>
+140|         ) : (
+141|           language === 'en' ? 'Pay Now' : 'Pagar Agora'
+142|         )}
+143|       </button>
+144|
+145|       <div className="flex items-center justify-center gap-2 mt-2">
+146|         <div className="text-xs text-gray-500 text-center">
+147|           {language === 'en'
+148|             ? 'Secure payment processed by Stripe'
+149|             : 'Pagamento seguro processado pela Stripe'}
+150|         </div>
+151|       </div>
+152|     </form>
+153|   );
+154| };
+155|
+156| interface StripePaymentElementProps {
+157|   amount: number; // Mantido para cálculo interno se necessário, mas não enviado diretamente
+158|   currency: string; // Mantido para cálculo interno se necessário
+159|   formData: ContactFormData;
+160|   onSuccess: (paymentIntentId: string, formId: string) => void; // MODIFIED: Pass formId
+161|   formId: string | null; // Pode ser null inicialmente
+162|   files: FileData; // Mantido, embora não usado diretamente aqui
+163|   colorPalette: string[]; // Mantido
+164|   finalContent: string; // Mantido
+165|   plan: string; // Necessário para criar PaymentIntent
+166| }
+167|
+168| // Main component that sets up the Stripe Elements
+169| const StripePaymentElement: React.FC<StripePaymentElementProps> = ({
+170|   formData,
+171|   onSuccess,
+172|   plan,
+173|   // Note: amount and currency are not directly used here anymore,
+174|   // the backend calculates them based on the plan.
+175|   // formId is handled internally now within this component via API response.
+176|   ...otherProps // Pass remaining props like files, colorPalette etc. if needed down the line
+177| }) => {
+178|   const [clientSecret, setClientSecret] = useState<string | null>(null);
+179|   const [retrievedFormId, setRetrievedFormId] = useState<string | null>(null); // Store formId from API
+180|   const [isLoading, setIsLoading] = useState(true);
+181|   const [error, setError] = useState<string | null>(null);
+182|   const { language } = useLanguage();
+183|
+184|   useEffect(() => {
+185|     // Create a PaymentIntent on the server and get its client secret
+186|     const createPaymentIntent = async () => {
+187|       try {
+188|         setIsLoading(true);
+189|         setError(null);
+190|
+191|         console.log('Creating payment intent...');
+192|         console.log('- Plan:', plan);
+193|         console.log('- Form Data Keys:', Object.keys(formData));
+194|
+195|         // Call backend API to create a payment intent
+196|         const response = await fetch('/api/create-payment-intent', {
+197|           method: 'POST',
+198|           headers: {
+199|             'Content-Type': 'application/json',
+200|           },
+201|           body: JSON.stringify({
+202|             plan,
+203|             formData, // Send the entire form data
+204|           }),
+205|         });
+206|
+207|         if (!response.ok) {
+208|           const errorData = await response.json();
+209|           throw new Error(errorData.error || 'Failed to create payment intent');
+210|         }
+211|
+212|         const data = await response.json();
+213|         console.log('Payment intent created:', data);
+214|
+215|         if (!data.clientSecret || !data.formId) {
+216|             throw new Error('API response missing clientSecret or formId');
+217|         }
+218|
+219|         setClientSecret(data.clientSecret);
+220|         setRetrievedFormId(data.formId); // Store the formId returned by the API
+221|         localStorage.setItem('form_id', data.formId); // Backup to localStorage
+222|         console.log('Saved form ID from API:', data.formId);
+223|
+224|       } catch (err: any) {
+225|         console.error('Error creating payment intent:', err);
+226|         setError(err.message || 'Failed to create payment intent');
+227|         toast.error(
+228|           language === 'en'
+229|             ? 'Failed to initialize payment. Please try again.'
+230|             : 'Falha ao inicializar o pagamento. Por favor, tente novamente.'
+231|         );
+232|       } finally {
+233|         setIsLoading(false);
+234|       }
+235|     };
+236|
+237|     // Only run if stripePromise is available
+238|     if(stripePromise) {
+239|         createPaymentIntent();
+240|     }
+241|   }, [plan, formData, language]); // Dependencies
+242|
+243|   if (!stripePromise) {
+244|     return (
+245|       <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-md">
+246|         {language === 'en'
+247|           ? 'Stripe has not been properly configured. Please contact support.'
+248|           : 'O Stripe não foi configurado corretamente. Por favor, entre em contato com o suporte.'}
+249|       </div>
+250|     );
+251|   }
+252|
+253|   if (error) {
+254|     return (
+255|       <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-md">
+256|         <p className="font-medium mb-2">
+257|           {language === 'en' ? 'Error initializing payment' : 'Erro ao inicializar pagamento'}
+258|         </p>
+259|         <p>{error}</p>
+260|         <button
+261|           onClick={() => window.location.reload()} // Simple retry mechanism
+262|           className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+263|         >
+264|           {language === 'en' ? 'Try Again' : 'Tentar Novamente'}
+265|         </button>
+266|       </div>
+267|     );
+268|   }
+269|
+270|   if (isLoading || !clientSecret || !retrievedFormId) {
+271|     return (
+272|       <div className="flex flex-col items-center justify-center p-8">
+273|         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+274|         <p className="text-gray-600">
+275|           {language === 'en' ? 'Setting up payment...' : 'Preparando pagamento...'}
+276|         </p>
+277|       </div>
+278|     );
+279|   }
+280|
+281|   return (
+282|     <div className="bg-white rounded-lg">
+283|       <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
+284|         <StripePaymentForm
+285|           clientSecret={clientSecret}
+286|           onSuccess={onSuccess}
+287|           businessName={formData.business}
+288|           formId={retrievedFormId} // Pass the retrieved formId
+289|         />
+290|       </Elements>
+291|     </div>
+292|   );
+293| };
+294|
+295| export default StripePaymentElement;
+296|```
+
+**Análise de `StripePaymentElement.tsx`:**
+
+*   **[+] Correto:** Inicializa `stripePromise` fora do componente.
+*   **[+] Correto:** O `useEffect` chama `/api/create-payment-intent` passando `plan` e `formData`.
+*   **[+] Correto:** Recebe e armazena `clientSecret` e `formId` (renomeado para `retrievedFormId`) no estado. Salva no `localStorage` como backup.
+*   **[+] Correto:** O `StripePaymentForm` (componente interno) usa os hooks `useStripe` e `useElements`.
+*   **[+] Correto:** O `handleSubmit` chama `stripe.confirmPayment`.
+*   **[+] Perfeito:** No caso de sucesso (`paymentIntent.status === 'succeeded'`), ele **NÃO** tenta atualizar o Supabase. Ele apenas chama o callback `onSuccess` passando o `paymentIntent.id` e o `formId`. **Isso está exatamente como queríamos!**
+*   **[+] Correto:** Lida com erros e estados de carregamento.
+*   **[+] Correto:** `return_url` foi ajustado para ir para `/success` e passar o `formId`.
+
+---
+
+**2. `src/components/contact/CartCheckout.tsx`**
+
+```typescript
+  1 | import React, { useState, Suspense, lazy } from "react";
+  2 | import OrderSummary from "./cart/OrderSummary";
+  3 | import PlanBenefits from "./cart/PlanBenefits";
+  4 | import PeriodSelector from "./cart/PeriodSelector";
+  5 | import PriceDisplay from "./cart/PriceDisplay";
+  6 | import { Button } from "@/components/ui/button";
+  7 | import { ArrowLeft, Loader2 } from "lucide-react"; // Import Loader2
+  8 | import { ContactFormData, FileData } from "./types";
+  9 | import PayPalCheckout from "./PayPalCheckout"; // Kept for potential future use
+ 10 | import { PricingConfiguration } from "@/lib/config/pricing";
+ 11 | import { useLanguage } from "@/contexts/LanguageContext";
+ 12 | import { useNavigate } from "react-router-dom"; // Import useNavigate
+ 13 | import { toast } from "sonner"; // Import toast
+ 14 |
+ 15 | // Lazy load the StripePaymentElement
+ 16 | const StripePaymentElement = lazy(() => import('./cart/StripePaymentElement'));
+ 17 |
+ 18 | interface CartCheckoutProps {
+ 19 |   formData: ContactFormData;
+ 20 |   onPaymentSuccess: (paymentId: string, formId: string) => void; // Pass formId here
+ 21 |   onBack: (e: React.MouseEvent) => void;
+ 22 |   pricingConfig?: PricingConfiguration;
+ 23 |   isStripePayment?: boolean; // Still useful to decide which flow to show initially
+ 24 |   // useStripeRedirect is likely obsolete now as Elements is integrated
+ 25 |   formId: string | null; // Receive formId (can be null initially)
+ 26 |   files: FileData;
+ 27 |   colorPalette: string[];
+ 28 |   finalContent: string;
+ 29 | }
+ 30 |
+ 31 | const CartCheckout: React.FC<CartCheckoutProps> = ({
+ 32 |   formData,
+ 33 |   onPaymentSuccess, // This callback is triggered by StripePaymentElement on success
+ 34 |   onBack,
+ 35 |   pricingConfig,
+ 36 |   isStripePayment = true, // Default to Stripe Elements
+ 37 |   formId: propFormId, // Rename prop to avoid conflict
+ 38 |   files,
+ 39 |   colorPalette,
+ 40 |   finalContent
+ 41 | }) => {
+ 42 |   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "annual">(
+ 43 |     formData.selectedPlan as "monthly" | "annual"
+ 44 |   );
+ 45 |   const { language } = useLanguage();
+ 46 |   const navigate = useNavigate(); // Hook for navigation
+ 47 |   const [isTestLoading, setIsTestLoading] = useState(false); // Loading state for test button
+ 48 |
+ 49 |   // Use the formId from props if available, otherwise fallback (though it should be passed)
+ 50 |   const currentFormId = propFormId || localStorage.getItem('form_id');
+ 51 |
+ 52 |   // Default pricing config if none provided
+ 53 |   const effectivePricingConfig = pricingConfig || {
+ 54 |     monthly: 89.9,
+ 55 |     annual: 598.80,
+ 56 |     monthlyInAnnual: 49.9,
+ 57 |     currency: "BRL",
+ 58 |     currencySymbol: "R
+#39;,
+ 59 |     discount: 44,
+ 60 |     marketPrice: 530.65,
+ 61 |     savings: 480.75,
+ 62 |     savingsPercentage: 91,
+ 63 |   };
+ 64 |
+ 65 |   // Calculate the price based on the selected plan
+ 66 |   const price = {
+ 67 |     plan: selectedPlan,
+ 68 |     monthly: effectivePricingConfig.monthly,
+ 69 |     annual: effectivePricingConfig.annual,
+ 70 |     monthlyInAnnual: effectivePricingConfig.monthlyInAnnual,
+ 71 |     totalPrice:
+ 72 |       selectedPlan === "monthly"
+ 73 |         ? effectivePricingConfig.monthly
+ 74 |         : effectivePricingConfig.annual,
+ 75 |     currency: effectivePricingConfig.currency,
+ 76 |   };
+ 77 |
+ 78 |   // Define the callback for successful payment confirmation from StripePaymentElement
+ 79 |   const handleStripeSuccess = (paymentIntentId: string, formId: string) => {
+ 80 |     console.log("CartCheckout: Stripe payment success confirmed by element:", paymentIntentId, formId);
+ 81 |     // Now navigate to the success page, passing the formId
+ 82 |     navigate(`/success?formId=${formId}`);
+ 83 |   };
+ 84 |
+ 85 |   // Handler for the Test Button
+ 86 |   const handleTestPayment = async () => {
+ 87 |     setIsTestLoading(true);
+ 88 |     toast.loading(language === 'en' ? "Processing test payment..." : "Processando pagamento de teste...");
+ 89 |     try {
+ 90 |       console.log("MODO TESTE: Iniciando pagamento de teste de R$ 1,00...");
+ 91 |
+ 92 |       // Create a test payment intent via the API
+ 93 |       const createResponse = await fetch('/api/create-payment-intent', {
+ 94 |         method: 'POST',
+ 95 |         headers: {
+ 96 |           'Content-Type': 'application/json',
+ 97 |         },
+ 98 |         body: JSON.stringify({
+ 99 |           plan: 'test', // Use the specific test plan
+100|           formData: formData // Send current form data
+101|         }),
+102|       });
+103|
+104|       if (!createResponse.ok) {
+105|         const errorData = await createResponse.json();
+106|         throw new Error(errorData.error || "Falha ao criar pagamento de teste");
+107|       }
+108|
+109|       const data = await createResponse.json();
+110|       console.log("Test payment intent created:", data);
+111|
+112|       if (!data.formId) {
+113|         throw new Error("API did not return formId for test payment");
+114|       }
+115|
+116|       // Directly call the onSuccess prop, simulating a successful payment
+117|       // This bypasses Stripe Elements UI and webhook
+118|       // Use a placeholder paymentId since no real payment intent was confirmed via Elements
+119|       const placeholderPaymentId = `test_${data.formId}`;
+120|       onPaymentSuccess(placeholderPaymentId, data.formId); // Call the prop passed down
+121|
+122|       // Navigate to success page immediately
+123|       navigate(`/success?formId=${data.formId}&test=true`);
+124|
+125|       toast.dismiss(); // Dismiss loading toast
+126|       console.log("Pagamento de teste processado e redirecionado com sucesso");
+127|
+128|     } catch (error) {
+129|       toast.dismiss(); // Dismiss loading toast on error
+130|       console.error("Erro ao processar pagamento de teste:", error);
+131|       toast.error(
+132|         (error instanceof Error ? error.message : "Ocorreu um erro") ||
+133|         (language === 'en' ? "Error processing test payment." : "Erro ao processar pagamento de teste.")
+134|       );
+135|     } finally {
+136|       setIsTestLoading(false);
+137|     }
+138|   };
+139|
+140|   return (
+141|     <div className="w-full max-w-4xl mx-auto">
+142|       <Button
+143|         onClick={onBack}
+144|         variant="ghost"
+145|         className="mb-6 hover:bg-gray-100"
+146|       >
+147|         <ArrowLeft className="mr-2 h-4 w-4" />
+148|         {language === 'en' ? 'Back' : 'Voltar'}
+149|       </Button>
+150|
+151|       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+152|         {/* Left Column - Order Summary & Benefits */}
+153|         <div>
+154|           <OrderSummary business={formData.business} />
+155|           <div className="mt-6">
+156|             <PlanBenefits currentPlan={selectedPlan} />
+157|           </div>
+158|         </div>
+159|
+160|         {/* Right Column - Pricing & Payment */}
+161|         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+162|           <h3 className="text-xl font-semibold mb-4">
+163|             {language === 'en' ? 'Payment Details' : 'Detalhes do Pagamento'}
+164|           </h3>
+165|
+166|           {/* Period Selector */}
+167|           <PeriodSelector
+168|             selectedPlan={selectedPlan}
+169|             onChange={setSelectedPlan}
+170|             pricingConfig={effectivePricingConfig}
+171|           />
+172|
+173|           {/* Price Display */}
+174|           <div className="mt-6">
+175|             <PriceDisplay
+176|               selectedPlan={selectedPlan}
+177|               pricingConfig={effectivePricingConfig}
+178|             />
+179|           </div>
+180|
+181|           {/* Payment Buttons */}
+182|           <div className="mt-8 space-y-4">
+183|             {isStripePayment ? (
+184|               <div className="bg-white p-4 rounded-lg border border-gray-200">
+185|                 <h4 className="text-lg font-medium mb-4">
+186|                   {language === 'en' ? 'Pay with Card' : 'Pagar com Cartão'}
+187|                 </h4>
+188|
+189|                 {/* Stripe Payment Element com carregamento lazy */}
+190|                 <Suspense fallback={
+191|                   <div className="flex flex-col items-center justify-center p-4">
+192|                     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-2"></div>
+193|                     <p className="text-sm text-gray-600">
+194|                       {language === 'en' ? 'Loading payment form...' : 'Carregando formulário de pagamento...'}
+195|                     </p>
+196|                   </div>
+197|                 }>
+198|                   <StripePaymentElement
+199|                     // Pass necessary props, note amount/currency are handled by backend now
+200|                     formData={formData}
+201|                     onSuccess={handleStripeSuccess} // Use the internal handler
+202|                     formId={currentFormId} // Pass the effective formId
+203|                     plan={selectedPlan}
+204|                     // Pass other props if needed by StripePaymentElement
+205|                     amount={price.totalPrice} // Keep for potential internal use in StripePaymentElement
+206|                     currency={effectivePricingConfig.currency} // Keep for potential internal use
+207|                     files={files}
+208|                     colorPalette={colorPalette}
+209|                     finalContent={finalContent}
+210|                   />
+211|                 </Suspense>
+212|
+213|                 {/* Botão para teste com 1 real */}
+214|                 <div className="mt-6 pt-4 border-t border-gray-200">
+215|                   <Button
+216|                     onClick={handleTestPayment} // Use the new handler
+217|                     disabled={isTestLoading} // Use loading state for test button
+218|                     className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition-all flex items-center justify-center"
+219|                   >
+220|                     {isTestLoading ? (
+221|                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+222|                     ) : null}
+223|                     {isTestLoading ? (language === 'en' ? 'Processing...' : 'Processando...') : (language === 'en' ? 'Test with $1.00' : 'Testar com R$ 1,00')}
+224|                   </Button>
+225|                 </div>
+226|               </div>
+227|             ) : (
+228|               // PayPal logic remains here if needed in future, but currently defaults to Stripe
+229|               <PayPalCheckout
+230|                 selectedPlan={selectedPlan}
+231|                 onBack={onBack}
+232|                 onSuccess={(id) => handleStripeSuccess(id, currentFormId || '')} // Adapt PayPal success if kept
+233|                 formData={formData}
+234|                 files={files}
+235|                 colorPalette={colorPalette}
+236|                 finalContent={finalContent}
+237|                 pricingConfig={effectivePricingConfig}
+238|               />
+239|             )}
+240|           </div>
+241|         </div>
+242|       </div>
+243|     </div>
+244|   );
+245| };
+246|
+247| export default CartCheckout;
+248|```
+
+**Análise de `CartCheckout.tsx`:**
+
+*   **[+] Correto:** Importa `StripePaymentElement` com lazy loading.
+*   **[+] Correto:** Renderiza `StripePaymentElement` dentro de `<Suspense>`.
+*   **[+] Correto:** Cria uma função `handleStripeSuccess` que é passada como `onSuccess` para `StripePaymentElement`. Essa função apenas navega para `/success?formId=...`. Perfeito!
+*   **[+] Correto:** O botão "Testar com R$ 1,00" chama a função `handleTestPayment`.
+*   **[+] Correto:** `handleTestPayment` chama `/api/create-payment-intent` com `plan: 'test'`.
+*   **[+] Correto:** `handleTestPayment` **NÃO** espera confirmação do Stripe Elements, mas chama diretamente `onPaymentSuccess` (a prop original, não `handleStripeSuccess`) e depois navega para `/success?formId=...`. Isso está alinhado com a explicação do agente sobre a simulação.
+
+---
+
+**3. `src/pages/SuccessPage.tsx` (Versão Corrigida)**
+
+```typescript
+  1 | import React, { useEffect, useState } from 'react';
+  2 | import { useNavigate, useLocation } from 'react-router-dom';
+  3 | import { toast } from 'sonner';
+  4 | import { supabase } from '@/lib/supabase/client';
+  5 | import { useLanguage } from '@/contexts/LanguageContext';
+  6 | import ReactConfetti from 'react-confetti';
+  7 |
+  8 | console.log('SuccessPage.tsx carregado!');
+  9 |
+ 10 | const SuccessPage: React.FC = () => {
+ 11 |   const [businessName, setBusinessName] = useState<string>('');
+ 12 |   const [isLoading, setIsLoading] = useState(true); // Start loading
+ 13 |   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+ 14 |   const [showConfetti, setShowConfetti] = useState(true);
+ 15 |   const navigate = useNavigate();
+ 16 |   const location = useLocation();
+ 17 |   const { language } = useLanguage();
+ 18 |
+ 19 |   // Obter parâmetros da URL
+ 20 |   const queryParams = new URLSearchParams(location.search);
+ 21 |   const formId = queryParams.get('formId'); // Primary identifier now
+ 22 |   const sessionId = queryParams.get('sessionId'); // Keep for potential logging/debug
+ 23 |   const businessParam = queryParams.get('business'); // Keep for manual fallback
+ 24 |
+ 25 |   // Log de parâmetros
+ 26 |   console.log('SuccessPage - Parâmetros da URL:', { formId, sessionId, business: businessParam });
+ 27 |
+ 28 |   // Confetti effects
+ 29 |   useEffect(() => {
+ 30 |     const handleResize = () => {
+ 31 |       setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+ 32 |     };
+ 33 |     window.addEventListener('resize', handleResize);
+ 34 |     const timer = setTimeout(() => setShowConfetti(false), 8000);
+ 35 |     return () => {
+ 36 |       window.removeEventListener('resize', handleResize);
+ 37 |       clearTimeout(timer);
+ 38 |     };
+ 39 |   }, []);
+ 40 |
+ 41 |   // Fetch data based on formId
+ 42 |   useEffect(() => {
+ 43 |     const fetchSubmissionDetails = async () => {
+ 44 |       setIsLoading(true);
+ 45 |
+ 46 |       // Handle direct business name if provided (manual fallback)
+ 47 |       if (businessParam) {
+ 48 |         console.log('SuccessPage - Using direct business name from URL:', businessParam);
+ 49 |         setBusinessName(decodeURIComponent(businessParam));
+ 50 |         setIsLoading(false);
+ 51 |         return;
+ 52 |       }
+ 53 |
+ 54 |       if (!formId) {
+ 55 |         console.warn('SuccessPage - No formId found in URL. Displaying generic success.');
+ 56 |         toast.warning(language === 'en' ? 'Payment successful. Details will be confirmed via email.' : 'Pagamento bem-sucedido. Detalhes serão confirmados por e-mail.');
+ 57 |         setIsLoading(false);
+ 58 |         return;
+ 59 |       }
+ 60 |
+ 61 |       console.log(`SuccessPage - Fetching submission details for formId: ${formId}`);
+ 62 |
+ 63 |       try {
+ 64 |         // ---------> PONTO CRÍTICO <---------
+ 65 |         // Busca os dados NO SUPABASE usando o formId.
+ 66 |         // Assumimos que o WEBHOOK JÁ ATUALIZOU esses dados.
+ 67 |         const { data, error } = await supabase
+ 68 |           .from('form_submissions')
+ 69 |           .select('*')
+ 70 |           .eq('id', formId) // Search by the primary 'id' which should be the formId
+ 71 |           .single(); // Expect only one result
+ 72 |         // ---------> FIM PONTO CRÍTICO <---------
+ 73 |
+ 74 |         if (error) {
+ 75 |           console.error('Error fetching submission details:', error);
+ 76 |           toast.error(language === 'en' ? 'Error retrieving details, but payment likely succeeded.' : 'Erro ao buscar detalhes, mas pagamento provavelmente foi bem-sucedido.');
+ 77 |         } else if (data) {
+ 78 |           console.log('SuccessPage - Submission details found:', data);
+ 79 |           setBusinessName(data.business);
+ 80 |           toast.success(language === 'en' ? 'Your request is confirmed!' : 'Sua solicitação está confirmada!');
+ 81 |         } else {
+ 82 |           console.warn(`SuccessPage - No submission found for formId: ${formId}. Payment likely succeeded, awaiting webhook processing.`);
+ 83 |           toast.info(language === 'en' ? 'Payment confirmed, processing details...' : 'Pagamento confirmado, processando detalhes...');
+ 84 |           // Might implement a small retry/delay here if needed, but webhook should handle it
+ 85 |         }
+ 86 |       } catch (fetchError) {
+ 87 |         console.error('Error fetching data:', fetchError);
+ 88 |         toast.error(language === 'en' ? 'Error retrieving details.' : 'Erro ao buscar detalhes.');
+ 89 |       } finally {
+ 90 |         setIsLoading(false);
+ 91 |       }
+ 92 |     };
+ 93 |
+ 94 |     fetchSubmissionDetails();
+ 95 |   }, [formId, businessParam, language]); // Depend on formId and businessParam
+ 96 |
+ 97 |   const handleGoHome = () => {
+ 98 |     navigate('/');
+ 99 |   };
+100|
+101|   return (
+102|     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 px-4 relative overflow-hidden">
+103|       {showConfetti && (
+104|         <ReactConfetti
+105|           width={windowSize.width}
+106|           height={windowSize.height}
+107|           recycle={true} // Keep confetti going for a bit
+108|           numberOfPieces={500}
+109|           gravity={0.15}
+110|           colors={['#4ade80', '#22c55e', '#16a34a', '#ef4444', '#f97316', '#3b82f6', '#8b5cf6']}
+111|           style={{ zIndex: 1 }} // Ensure confetti is behind the content
+112|         />
+113|       )}
+114|
+115|       <div className="bg-white p-8 rounded-xl shadow-lg max-w-lg w-full text-center relative z-10">
+116|         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+117|           <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+118|             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+119|           </svg>
+120|         </div>
+121|
+122|         <h1 className="text-2xl font-bold text-gray-800 mb-4">
+123|           {language === 'en' ? 'Payment Successful!' : 'Pagamento Realizado com Sucesso!'}
+124|         </h1>
+125|
+126|         {isLoading ? (
+127|           <p className="text-gray-600 mb-6">Carregando detalhes...</p>
+128|         ) : businessName ? (
+129|           <p className="text-lg text-gray-700 mb-6">
+130|             {language === 'en'
+131|               ? `Thank you for choosing us for the website of ${businessName}!`
+132|               : `Obrigado por nos escolher para o site da ${businessName}!`}
+133|           </p>
+134|         ) : (
+135|            <p className="text-lg text-gray-700 mb-6">
+136|               {language === 'en'
+137|                 ? `Thank you for your payment!`
+138|                 : `Obrigado pelo seu pagamento!`}
+139|            </p>
+140|         )}
+141|
+142|         <p className="text-gray-600 mb-8">
+143|           {language === 'en'
+144|             ? 'Our team will contact you soon to start working on your project.'
+145|             : 'Nossa equipe entrará em contato em breve para iniciar seu projeto.'}
+146|         </p>
+147|
+148|         <button
+149|           onClick={handleGoHome}
+150|           className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+151|         >
+152|           {language === 'en' ? 'Return to Home' : 'Voltar para o Início'}
+153|         </button>
+154|       </div>
+155|     </div>
+156|   );
+157| };
+158|
+159| export default SuccessPage;
+160|```
+
+**Análise de `SuccessPage.tsx` (Corrigida):**
+
+*   **[+] Correto:** O `useEffect` principal agora depende principalmente do `formId`.
+*   **[+] Perfeito:** **A lógica antiga que chamava `/api/process-payment-success` foi removida!** Isso é exatamente o que queríamos.
+*   **[+] Correto:** A página agora tenta buscar os dados da submissão diretamente do Supabase usando `supabase.from('form_submissions').select('*').eq('id', formId)`. Isso assume que o webhook já atualizou o registro.
+*   **[+] Bom:** Inclui tratamento para caso o `formId` não seja encontrado (mostra mensagem genérica) e para o fallback com `businessParam`.
+*   **[+] Bom:** Mantém o confetti para uma boa experiência do usuário.
+
+**Conclusão:**
+
+Com base no código fornecido e nas confirmações do agente, parece que a implementação está correta e alinhada com a nossa estratégia!
+
+*   O pagamento agora ocorre dentro do formulário usando Stripe Elements.
+*   O backend salva os dados preliminares no Supabase antes do pagamento.
+*   O backend usa um webhook para atualizar o status final do pagamento no Supabase.
+*   A página de sucesso foi simplificada e não processa mais pagamentos.
+*   O botão de teste foi adaptado (embora não teste o webhook).
+
+**Estamos prontos para testar!**
+
+**Sugestões de Teste:**
+
+1.  **Fluxo Completo (Stripe Elements):**
+    *   Acesse o site (`orygensites.com` ou a URL do Replit).
+    *   Escolha um plano (ex: Anual).
+    *   Preencha todas as etapas do formulário.
+    *   Na etapa de pagamento, **NÃO** clique no botão "Testar".
+    *   Insira **dados de cartão de teste do Stripe** (ex: 4242... para Visa).
+    *   Clique em "Pagar Agora".
+    *   **Verifique:**
+        *   Você NÃO foi redirecionado para fora do site?
+        *   O pagamento foi confirmado na interface?
+        *   Você foi redirecionado para a página `/success?formId=...`?
+        *   A página de sucesso exibiu a mensagem correta (e o nome da empresa, se a busca no Supabase funcionou rápido)?
+        *   **Mais importante:** Verifique no seu dashboard do Supabase (tabela `form_submissions`) se o registro correspondente ao `formId` foi atualizado para `payment_status: 'paid'` e se o `payment_id` foi preenchido. Isso confirma que o **webhook funcionou**. (Pode levar alguns segundos após o pagamento).
+        *   Verifique os logs do Replit para ver as mensagens do `/api/create-payment-intent` e do `/api/webhook`.
+2.  **Fluxo de Teste (Botão "Testar com R$ 1,00"):**
+    *   Preencha o formulário.
+    *   Na etapa de pagamento, clique no botão "Testar com R$ 1,00".
+    *   **Verifique:**
+        *   Você foi redirecionado para `/success?formId=...&test=true`?
+        *   A página de sucesso funcionou?
+        *   **Verifique no Supabase:** Um registro com `payment_status: 'pending_payment'` foi criado pelo `/api/create-payment-intent` com `plan: 'test'`. **Este registro NÃO será atualizado para 'paid'** porque este fluxo não envolve a confirmação real do Stripe nem o webhook.
+3.  **Teste de Falha (Opcional):**
+    *   Use um cartão de teste do Stripe que simula falha.
+    *   Verifique se a mensagem de erro apropriada é exibida no formulário de pagamento.
+    *   Verifique se o registro no Supabase permanece como `pending_payment` ou é atualizado para `failed` pelo webhook (`payment_intent.payment_failed`).
+
+Execute o teste principal (Fluxo Completo) primeiro. Me diga os resultados, especialmente a atualização no Supabase. Se algo falhar, me informe os detalhes (mensagens de erro no console do navegador, logs do Replit, status no Supabase). Boa sorte!
