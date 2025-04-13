@@ -3,28 +3,18 @@ const { createServer } = require('http');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
-const { setupCreatePaymentIntent } = require('./src/server/create-payment-intent.js');
-const { setupStripeRedirect } = require('./src/server/stripe-redirect.js');
-
-// Configurar variáveis de ambiente para Stripe
-const REQUIRED_ENV_VARS = ['STRIPE_SECRET_KEY'];
-
-// Verificar variáveis de ambiente necessárias
-REQUIRED_ENV_VARS.forEach(envVar => {
-  if (!process.env[envVar]) {
-    console.warn(`⚠️ Variável de ambiente ${envVar} não configurada. Algumas funcionalidades podem não funcionar corretamente.`);
-  } else {
-    console.log(`✓ Variável de ambiente ${envVar} configurada`);
-  }
-});
-
-// Em CommonJS, __dirname já está disponível
-// Não precisamos definir __filename e __dirname manualmente
 
 // Cria uma aplicação Express
 const app = express();
 
-// Middleware para capturar o corpo bruto da requisição para webhooks do Stripe
+// Configuração CORS completamente permissiva para ambiente de desenvolvimento
+app.use(cors({
+  origin: '*',
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  allowedHeaders: '*'
+}));
+
+// Tratamento especial para webhooks do Stripe se necessário
 app.use((req, res, next) => {
   if (req.originalUrl === '/api/webhook') {
     // Para webhook do Stripe, precisamos do corpo bruto para verificar assinatura
@@ -54,22 +44,7 @@ app.use((req, res, next) => {
   }
 });
 
-// Configuração CORS completamente permissiva para ambiente de desenvolvimento
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, stripe-signature');
-  
-  // Permitir preflight requests OPTIONS
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-  
-  next();
-});
-
-// Configurar middlewares - Não usar para webhook
+// Configurar middlewares para outras rotas
 app.use((req, res, next) => {
   if (req.originalUrl === '/api/webhook') {
     // Para o webhook do Stripe, já tratamos o corpo no middleware anterior
@@ -86,82 +61,53 @@ app.use((req, res, next) => {
   next();
 });
 
-// Configurar a rota principal de redirecionamento do Stripe
-// Esta é a solução recomendada para evitar erros de JavaScript
-setupStripeRedirect(app);
+// ------------------------------------------------------------
+// MANIPULADORES DE ROTA ESPECÍFICOS PARA O PROBLEMA /api/checkout
+// ------------------------------------------------------------
 
-// Manter a rota API antiga para compatibilidade
-setupCreatePaymentIntent(app);
+// Importante: Definir este manipulador ANTES de qualquer outra rota
+// Esta é a rota específica que estava causando problemas
+app.all('/api/checkout/store-form-data', (req, res) => {
+  console.log('[STORE FORM DATA] Recebida chamada para /api/checkout/store-form-data');
+  
+  // Importar o manipulador diretamente
+  const handler = require('./api/store-form-data');
+  
+  // Chamar o manipulador com req e res
+  handler(req, res);
+});
+
+// Essa rota captura qualquer outra chamada para /api/checkout/*
+app.all('/api/checkout/*', (req, res) => {
+  const originalPath = req.path;
+  console.log(`[CHECKOUT REDIRECT] Capturada solicitação para: ${originalPath}`);
+  
+  // Extrair o caminho após /api/checkout/
+  const subPath = originalPath.substring('/api/checkout/'.length);
+  
+  // Redirecionar para o endpoint correspondente sem o prefixo checkout/
+  const newPath = `/api/${subPath}`;
+  console.log(`[CHECKOUT REDIRECT] Redirecionando para: ${newPath}`);
+  
+  // Redirecionar (método HTTP 307 preserva o método e corpo da requisição)
+  res.redirect(307, newPath);
+});
+
+// ------------------------------------------------------------
+// OUTRAS ROTAS DA API
+// ------------------------------------------------------------
 
 // Registrar todas as rotas de API principais
 app.use('/api/checkout-direct', require('./api/checkout-direct'));
 app.use('/api/process-payment-success', require('./api/process-payment-success'));
 app.use('/api/store-form-data', require('./api/store-form-data'));
-
-// Rotas antigas, manter para compatibilidade
-app.use('/api/checkout/store-form-data', require('./api/store-form-data')); 
-
-// Capturar solicitações para o padrão /api/checkout/X e redirecionar 
-app.use('/api/checkout', (req, res, next) => {
-  console.log(`[CHECKOUT REDIRECT] Capturada solicitação para: ${req.path}`);
-  
-  // Se a requisição já é para /api/checkout/store-form-data, deixamos passar (já temos um handler específico)
-  if (req.path === '/api/checkout/store-form-data') {
-    console.log('[CHECKOUT REDIRECT] Rota já tem handler específico');
-    return next();
-  }
-  
-  // Extrair o caminho relativo (após /api/checkout)
-  const originalPath = req.originalUrl;
-  const relPath = originalPath.replace('/api/checkout', '');
-  
-  // Construir o novo caminho
-  const newPath = `/api${relPath}`;
-  console.log(`[CHECKOUT REDIRECT] Redirecionando para: ${newPath}`);
-  
-  // Redirecionar para o novo endpoint
-  return res.redirect(307, newPath);
-});
-
 app.use('/api/supabase-check', require('./api/supabase-check'));
 app.use('/api/create-payment-intent', require('./api/create-payment-intent'));
 app.use('/api/webhook', require('./api/webhook'));
+
 console.log('✅ Todas as rotas de API registradas corretamente');
 
 // Adicionar mais logging para depuração
-app.get('/api/debug-session', (req, res) => {
-  const { sessionId } = req.query;
-  console.log('[DEBUG] Verificando sessão:', sessionId);
-  if (!sessionId) {
-    return res.status(400).json({ error: 'sessionId é obrigatório' });
-  }
-  
-  // Retornar o status da sessão para diagnóstico
-  if (process.env.STRIPE_SECRET_KEY) {
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    stripe.checkout.sessions.retrieve(sessionId)
-      .then(session => {
-        console.log('[DEBUG] Sessão encontrada:', {
-          id: session.id,
-          status: session.status,
-          payment_status: session.payment_status
-        });
-        res.json({ success: true, session: {
-          id: session.id,
-          status: session.status,
-          payment_status: session.payment_status
-        }});
-      })
-      .catch(err => {
-        console.error('[DEBUG] Erro ao buscar sessão:', err);
-        res.status(500).json({ error: 'Erro ao buscar sessão', message: err.message });
-      });
-  } else {
-    res.status(500).json({ error: 'STRIPE_SECRET_KEY não configurada' });
-  }
-});
-
-// Rota de diagnóstico para verificar configuração
 app.get('/api/diagnostics', (req, res) => {
   res.json({
     status: 'ok',
@@ -177,21 +123,9 @@ app.get('/api/diagnostics', (req, res) => {
 // Rota de teste para Supabase
 app.get('/api/supabase-test', require('./api/supabase-test'));
 
-// Rota para servir as variáveis de ambiente para o frontend
-app.get('/env.js', (req, res) => {
-  // Ler o arquivo env.js
-  const envFilePath = path.join(__dirname, 'public', 'env.js');
-  let envFileContent = fs.readFileSync(envFilePath, 'utf8');
-  
-  // Substituir o placeholder pela variável de ambiente real
-  envFileContent = envFileContent.replace('{{VITE_STRIPE_PUBLIC_KEY}}', process.env.VITE_STRIPE_PUBLIC_KEY || '');
-  
-  // Definir o tipo de conteúdo como JavaScript
-  res.set('Content-Type', 'application/javascript');
-  
-  // Enviar o conteúdo com as substituições
-  res.send(envFileContent);
-});
+// ------------------------------------------------------------
+// SERVIR ARQUIVOS ESTÁTICOS
+// ------------------------------------------------------------
 
 // Definir a porta para o servidor
 const PORT = process.env.PORT || 5000;
@@ -214,7 +148,6 @@ if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
   
   // Rota para servir o arquivo index.html para todas as rotas não-API
-  // Esta abordagem é mais simples e evita problemas com o path-to-regexp
   app.use((req, res, next) => {
     console.log(`[SERVER] Handling request for: ${req.url}`);
     
