@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ContactInfo from '../ContactInfo';
 import BusinessDetails from '../BusinessDetails';
@@ -7,6 +6,7 @@ import CartCheckout from '../CartCheckout';
 import { ContactFormData, FileData } from '../types';
 import { PricingConfiguration } from '@/lib/config/pricing';
 import { useFormSubmission } from '../hooks/useFormSubmission';
+import { cn } from '@/lib/utils';
 
 interface FormContentContainerProps {
   step: number;
@@ -68,20 +68,21 @@ const FormContentContainer: React.FC<FormContentContainerProps> = ({
   });
 
   return (
-    <div className="mt-6 mb-4">
-      {step === 1 && (
+    <div className="mt-6 mb-4 relative">
+      {/* Render ALL step components, control visibility with CSS */}
+      <div className={cn({ block: step === 1, hidden: step !== 1 })}>
         <ContactInfo
           formData={formData}
           handleChange={handleChange}
         />
-      )}
-      {step === 2 && (
+      </div>
+      <div className={cn({ block: step === 2, hidden: step !== 2 })}>
         <BusinessDetails
           formData={formData}
           handleChange={handleChange}
         />
-      )}
-      {step === 3 && (
+      </div>
+      <div className={cn({ block: step === 3, hidden: step !== 3 })}>
         <VisualIdentity
           formData={formData}
           files={files}
@@ -92,8 +93,8 @@ const FormContentContainer: React.FC<FormContentContainerProps> = ({
           addColor={addColor}
           removeColor={removeColor}
         />
-      )}
-      {step === 4 && (
+      </div>
+      <div className={cn({ block: step === 4, hidden: step !== 4 })}>
         <CartCheckout
           formData={formData}
           onPaymentSuccess={handlePaymentSuccess}
@@ -104,7 +105,7 @@ const FormContentContainer: React.FC<FormContentContainerProps> = ({
           colorPalette={colorPalette}
           finalContent={finalContent}
         />
-      )}
+      </div>
     </div>
   );
 };
