@@ -1,3 +1,6 @@
+Por favor, substitua TODO o conteúdo do arquivo `zero-cost-website/api/create-payment-intent.js` pelo seguinte código:
+
+```javascript
 const Stripe = require('stripe');
 const { createClient } = require('@supabase/supabase-js');
 const { v4: uuidv4 } = require('uuid'); // Importar v4 do pacote uuid
@@ -176,3 +179,8 @@ module.exports = async (req, res) => {
     });
   }
 };
+```
+
+Certifique-se de **SUBSTITUIR** a linha `'https://www.orygensites.com'` no código acima pela URL real do seu site em produção, se for diferente, para a configuração de CORS.
+
+Após o agente confirmar que substituiu o conteúdo, podemos prosseguir para o commit/push e teste final na Vercel.
