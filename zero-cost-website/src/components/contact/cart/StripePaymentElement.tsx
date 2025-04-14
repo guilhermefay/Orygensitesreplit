@@ -12,13 +12,10 @@ import { ContactFormData, FileData } from '../types';
 import { Loader2 } from 'lucide-react';
 
 // Get the Stripe public key from environment variables
-console.log('>>> Reading import.meta.env:', JSON.stringify(import.meta.env)); 
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
-console.log('>>> Value read for VITE_STRIPE_PUBLIC_KEY:', stripePublicKey);
 
 // Log para depuração
 console.log('[STRIPE] Chave pública disponível?', !!stripePublicKey);
-console.log('[STRIPE] Chave pública (primeiros caracteres):', stripePublicKey ? stripePublicKey.substring(0, 10) + '...' : 'NÃO DEFINIDA');
 
 // Usar fallback para desenvolvimento/teste se necessário
 const finalStripeKey = stripePublicKey || 'pk_test_51OzEGcBL7JbfJBGnpnuFTzG66XCbiGF3Bqf4fxrSWBt3N9M7lDnTSOkqnYb7QFdnWjQiuDcxgAzEfNoDwuYAu9gw00YhGbxQEV';
