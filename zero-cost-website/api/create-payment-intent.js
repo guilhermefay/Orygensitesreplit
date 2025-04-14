@@ -78,8 +78,8 @@ module.exports = async (req, res) => {
         description = 'Plano Mensal - Website Profissional';
         break;
       case 'annual':
-        amount = 89900; // R$ 899,00
-        description = 'Plano Anual - Website Profissional';
+        amount = 100; // R$ 1,00 (ALTERADO PARA TESTE)
+        description = 'Plano Anual - Website Profissional (TESTE)';
         break;
       case 'promotion':
         amount = 49900; // R$ 499,00
