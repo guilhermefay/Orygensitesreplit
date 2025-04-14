@@ -1,22 +1,49 @@
 const Stripe = require('stripe');
 const { createClient } = require('@supabase/supabase-js');
-const { v4: uuidv4 } = require('uuid'); // Importar v4 do pacote uuid
+
+// Implementação local de UUID para testes no Replit (será substituída pelo pacote uuid na Vercel)
+function uuidv4() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+// No deploy da Vercel, descomente a linha abaixo e comente a implementação acima:
+// const { v4: uuidv4 } = require('uuid');
 
 // Validar Variáveis de Ambiente Essenciais
 const stripeKey = process.env.STRIPE_SECRET_KEY;
 const supabaseUrl = process.env.SUPABASE_URL;
-// IMPORTANTE: Garanta que SUPABASE_SERVICE_KEY contém sua chave SERVICE ROLE secreta do Supabase nas variáveis de ambiente da Vercel
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
-if (!stripeKey || !supabaseUrl || !supabaseServiceKey) {
-  console.error('[FATAL] Variáveis de ambiente essenciais (Stripe ou Supabase) não configuradas.');
-  // Em produção, é melhor não expor detalhes do erro interno
-  // Para Vercel, retornar erro 500 é apropriado
+// Para ambientes locais como Replit, usa SUPABASE_KEY; para Vercel, usa SUPABASE_SERVICE_KEY
+// IMPORTANTE: Garanta que SUPABASE_SERVICE_KEY contém sua chave SERVICE ROLE secreta do Supabase nas variáveis de ambiente da Vercel
+let supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+if (!supabaseServiceKey && process.env.SUPABASE_KEY) {
+  console.log('[CONFIG] Usando SUPABASE_KEY no ambiente de desenvolvimento. Para produção, configure SUPABASE_SERVICE_KEY');
+  supabaseServiceKey = process.env.SUPABASE_KEY; // Fallback para desenvolvimento
+}
+
+// Verificações necessárias
+if (!stripeKey) {
+  console.error('[FATAL] STRIPE_SECRET_KEY não configurada');
+}
+if (!supabaseUrl) {
+  console.error('[FATAL] SUPABASE_URL não configurada');
+}
+if (!supabaseServiceKey) {
+  console.error('[FATAL] Nem SUPABASE_SERVICE_KEY nem SUPABASE_KEY estão configuradas');
+}
+
+// Em ambientes de desenvolvimento (como Replit), podemos continuar mesmo sem todas as variáveis
+// Mas em produção (Vercel), garantimos a configuração completa
+if (process.env.NODE_ENV === 'production' && (!stripeKey || !supabaseUrl || !supabaseServiceKey)) {
+  console.error('[FATAL] Variáveis de ambiente essenciais não configuradas no ambiente de produção');
   module.exports = (req, res) => {
      res.status(500).json({ error: 'Internal Server Configuration Error' });
   };
-  // Lança um erro para interromper a inicialização se não estiver no contexto da função
-  throw new Error('Variáveis de ambiente essenciais não configuradas.');
+  throw new Error('Variáveis de ambiente essenciais não configuradas para produção.');
 }
 
 // Inicializar Clientes FORA do handler para reutilização (melhor performance)
