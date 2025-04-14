@@ -46,7 +46,9 @@ const ContactForm: React.FC<ContactFormProps> = ({
     showSuccessMessage,
     submitForm,
     setShowSuccessMessage,
-    formId
+    formId,
+    clientSecret,
+    currentFormId
   } = useContactForm(onSuccess, initialPlan, pricingConfig);
 
   const { paymentCompleted, handlePaymentSuccess, resetPaymentFlag } = usePaymentTracking();
@@ -179,7 +181,8 @@ const ContactForm: React.FC<ContactFormProps> = ({
             pricingConfig={pricingConfig}
             isStripePayment={isStripePayment}
             useStripeRedirect={useStripeRedirect}
-            formId={formId}
+            clientSecret={clientSecret}
+            currentFormId={currentFormId}
           />
           
           {/* Navigation */}

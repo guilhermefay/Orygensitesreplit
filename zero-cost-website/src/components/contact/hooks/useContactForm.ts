@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useFormData } from "./useFormData";
 import { useFormNavigation } from "./useFormNavigation";
 import { useContentGeneration } from "./useContentGeneration"; // Mantido caso precise dos dados
@@ -51,9 +51,87 @@ export const useContactForm = (
   } = useFormSubmission();
 
   const { language } = useLanguage(); // Get language context
+  
+  // >>> NOVO ESTADO para clientSecret e formId da API <<<
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [currentFormId, setCurrentFormId] = useState<string | null>(null);
+  const [isCreatingIntent, setIsCreatingIntent] = useState(false); // Estado de loading para a API
+  const [apiError, setApiError] = useState<string | null>(null); // <<< NOVO ESTADO para erro da API >>>
+
+  // >>> NOVA FUNÇÃO para chamar a API create-payment-intent <<<
+  const handleCreatePaymentIntent = useCallback(async () => {
+    console.log('[useContactForm] Tentando criar Payment Intent...');
+    setIsCreatingIntent(true);
+    setApiError(null); // <<< Usar setApiError >>> // Limpar erros anteriores
+
+    // Garantir que temos dados essenciais (pode adicionar mais validações se necessário)
+    if (!formData.name || !formData.email || !formData.phone || !formData.business || !formData.businessDetails || !formData.selectedPlan) {
+        toast.error(language === 'en' ? "Incomplete form data. Cannot create payment intent." : "Dados do formulário incompletos. Não é possível criar a intenção de pagamento.");
+        setIsCreatingIntent(false);
+        return false;
+    }
+
+    const requestBody = {
+        plan: formData.selectedPlan,
+        formData: formData, // Enviar todos os dados do formulário
+    };
+
+    try {
+        const response = await fetch('/api/create-payment-intent', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+            let errorText = 'Failed to create payment intent';
+            try {
+                const errorData = await response.json(); 
+                errorText = errorData.error || JSON.stringify(errorData);
+            } catch (jsonError) {
+                try {
+                    errorText = await response.text();
+                } catch (textError) {
+                    errorText = `Failed to create payment intent. Status: ${response.status}`;
+                }
+            }
+            console.error('[useContactForm] Erro da API create-payment-intent:', errorText);
+            throw new Error(errorText);
+        }
+
+        const data = await response.json();
+        console.log('[useContactForm] Payment Intent criado:', data);
+        if (data.clientSecret && data.formId) {
+            setClientSecret(data.clientSecret);
+            setCurrentFormId(data.formId); // Armazena o formId retornado pela API
+            setIsCreatingIntent(false);
+            return true; // Sucesso
+        } else {
+             throw new Error(language === 'en' ? "API did not return clientSecret or formId" : "API não retornou clientSecret ou formId");
+        }
+
+    } catch (err: any) {
+        console.error('[useContactForm] Erro ao criar payment intent:', err);
+        setApiError(err.message || 'Failed to create payment intent'); // <<< Usar setApiError >>>
+        toast.error(
+            (language === 'en' ? 'Failed to initialize payment: ' : 'Falha ao inicializar pagamento: ') + 
+            (err.message || (language === 'en' ? 'Please try again.' : 'Por favor, tente novamente.'))
+        );
+        setIsCreatingIntent(false);
+        return false; // Falha
+    } finally {
+      // Certifique-se que o loading é desativado em caso de erro inesperado não pego no catch
+      // Embora o catch deva pegar a maioria dos casos.
+      if (isCreatingIntent) {
+           setIsCreatingIntent(false);
+      }
+    }
+}, [formData, language, setClientSecret, setCurrentFormId]); // Dependências necessárias
 
   // Function to move to next step - CORRECTED LOGIC
-  const nextStep = (e: React.MouseEvent) => {
+  const nextStep = async (e: React.MouseEvent) => { // <<< Tornar async >>>
     console.log('>>> useContactForm - nextStep INICIADO para step:', step);
     e.preventDefault();
 
@@ -73,16 +151,30 @@ export const useContactForm = (
     // Add validation for step 3 if needed (e.g., require logo or colors)
 
     // --- ADVANCE STEP ---
-    // For ALL steps, including advancing from 3 to 4, just change the step.
-    // The API call to create the payment intent will happen inside StripePaymentElement
-    // when step becomes 4.
-    if (step < totalSteps) {
+    if (step === 3) { // <<< LÓGICA ESPECIAL PARA SAIR DO PASSO 3 >>>
+        console.log('Tentando avançar do passo 3 para o 4...');
+        if (isCreatingIntent) return false; // Não permite cliques múltiplos enquanto cria
+        
+        const intentCreated = await handleCreatePaymentIntent(); // Tenta criar a intenção
+        
+        if (intentCreated) {
+            console.log('Intenção de pagamento criada, avançando para o passo 4.');
+            goToNextStep(); // Avança SOMENTE se a intenção foi criada
+            return true;
+        } else {
+            console.log('Falha ao criar intenção de pagamento. Não avançando.');
+            return false; // Permanece no passo 3 se falhar
+        }
+    }
+     // <<< LÓGICA NORMAL PARA OUTROS PASSOS >>>
+    else if (step < totalSteps) {
       console.log(`useContactForm: Avançando do passo ${step} para ${step + 1}`);
-      console.log('>>> useContactForm - nextStep CHAMANDO goToNextStep');
-      goToNextStep(); // Use the correct navigation function
+      goToNextStep();
       return true;
     }
-    console.log(`useContactForm: Já está no último passo (${step}).`);
+    
+    // Se já está no último passo ou outra condição não tratada
+    console.log(`useContactForm: Já está no último passo (${step}) ou condição não prevista.`);
     return false;
   };
 
@@ -122,7 +214,11 @@ export const useContactForm = (
     totalSteps,
     generatedCopy, // Pass through
     finalContent, // Pass through
-    formId, // Pass through
+    formId, // Pass through (ID original, talvez não seja mais necessário passar)
+    clientSecret, // <<< Passar o clientSecret para o componente >>>
+    currentFormId, // <<< Passar o formId retornado pela API >>>
+    isCreatingIntent, // <<< Passar estado de loading da API >>>
+    apiError, // <<< Passar estado de erro da API >>>
     handleChange,
     handleColorChange,
     handleFileChange,

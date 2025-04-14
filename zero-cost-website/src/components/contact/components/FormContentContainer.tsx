@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ContactInfo from '../ContactInfo';
 import BusinessDetails from '../BusinessDetails';
 import VisualIdentity from '../VisualIdentity';
@@ -25,7 +25,8 @@ interface FormContentContainerProps {
   pricingConfig?: PricingConfiguration;
   isStripePayment?: boolean;
   useStripeRedirect?: boolean;
-  formId?: string;
+  clientSecret: string | null;
+  currentFormId: string | null;
 }
 
 const FormContentContainer: React.FC<FormContentContainerProps> = ({
@@ -45,22 +46,9 @@ const FormContentContainer: React.FC<FormContentContainerProps> = ({
   pricingConfig,
   isStripePayment = false,
   useStripeRedirect = false,
-  formId
+  clientSecret,
+  currentFormId
 }) => {
-  // Get formId from the useFormSubmission hook or localStorage
-  const { formId: hookFormId } = useFormSubmission();
-  const storedFormId = localStorage.getItem('form_id');
-  
-  // Use either the formId from props, hooks or from localStorage, ensure it's a valid ID
-  const effectiveFormId = formId || hookFormId || storedFormId || '';
-  
-  console.log("FormContentContainer - using formId:", effectiveFormId);
-  console.log("FormContentContainer - sources:", {
-    fromProps: formId,
-    fromHook: hookFormId,
-    fromStorage: storedFormId
-  });
-  
   // Log para depuração do valor do useStripeRedirect
   console.log("🔍 FormContentContainer - valores de pagamento:", {
     isStripePayment,
@@ -100,10 +88,11 @@ const FormContentContainer: React.FC<FormContentContainerProps> = ({
           onPaymentSuccess={handlePaymentSuccess}
           onBack={handlePaymentBack}
           pricingConfig={pricingConfig}
-          formId={effectiveFormId}
           files={files}
           colorPalette={colorPalette}
           finalContent={finalContent}
+          clientSecret={clientSecret}
+          currentFormId={currentFormId}
         />
       </div>
     </div>

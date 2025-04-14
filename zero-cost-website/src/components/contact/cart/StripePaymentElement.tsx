@@ -9,6 +9,7 @@ import {
 import { toast } from "sonner";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ContactFormData, FileData } from '../types';
+import { Loader2 } from 'lucide-react';
 
 // Get the Stripe public key from environment variables
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
@@ -163,6 +164,7 @@ interface StripePaymentElementProps {
   colorPalette: string[];
   finalContent: string;
   plan: string;
+  clientSecret: string | null;
 }
 
 // Main component that sets up the Stripe Elements
@@ -175,133 +177,54 @@ const StripePaymentElement: React.FC<StripePaymentElementProps> = ({
   files,
   colorPalette,
   finalContent,
-  plan
+  plan,
+  clientSecret
 }) => {
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { language } = useLanguage();
 
-  useEffect(() => {
-    // Create a PaymentIntent on the server and get its client secret
-    const createPaymentIntent = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        // Calculate amount in smallest currency unit (cents)
-        const amountInCents = Math.round(amount * 100);
-        
-        console.log('[StripePaymentElement] Criando payment intent com estes detalhes:');
-        console.log('- Amount:', amountInCents, 'cents');
-        console.log('- Currency:', currency);
-        console.log('- Form ID:', formId);
-        console.log('- Plan:', plan);
-        console.log('- Form Data (keys):', formData ? Object.keys(formData).join(', ') : 'formData é null/undefined');
-
-        // <<< INÍCIO DOS NOVOS LOGS >>>
-        console.log('>>> StripePaymentElement - useEffect - Antes do Fetch:');
-        console.log('>>> Props recebidas - plan:', plan);
-        console.log('>>> Props recebidas - formData:', JSON.stringify(formData, null, 2)); // Log completo do formData
-        console.log('>>> Props recebidas - formId (prop):', formId); // Log do formId vindo das props
-
-        const requestBody = {
-          plan,
-          formData,
-        };
-        console.log('>>> Corpo da Requisição (body) a ser enviado:', JSON.stringify(requestBody, null, 2));
-        // <<< FIM DOS NOVOS LOGS >>>
-
-        // Call our backend API to create a payment intent
-        console.log('[StripePaymentElement] Fazendo chamada para /api/create-payment-intent');
-        const response = await fetch('/api/create-payment-intent', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody), // Usar o requestBody logado
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to create payment intent');
-        }
-
-        const data = await response.json();
-        console.log('Payment intent created successfully with client secret');
-        
-        // Save the form ID to localStorage for recovery scenarios
-        if (data.formId) {
-          localStorage.setItem('form_id', data.formId);
-          console.log('Saved form ID to localStorage:', data.formId);
-        }
-        
-        setClientSecret(data.clientSecret);
-      } catch (err: any) {
-        console.error('Error creating payment intent:', err);
-        setError(err.message || 'Failed to create payment intent');
-        toast.error(
-          language === 'en' 
-            ? 'Failed to initialize payment. Please try again.' 
-            : 'Falha ao inicializar o pagamento. Por favor, tente novamente.'
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    createPaymentIntent();
-  }, [amount, currency, formId, plan, formData, language]);
-
   if (!stripePromise) {
     return (
-      <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-md">
-        {language === 'en' 
-          ? 'Stripe has not been properly configured. Please contact support.' 
-          : 'O Stripe não foi configurado corretamente. Por favor, entre em contato com o suporte.'}
+      <div className="text-center p-4 text-red-600">
+        {language === 'en'
+          ? 'Stripe failed to load. Please check your internet connection and refresh the page.'
+          : 'Falha ao carregar o Stripe. Verifique sua conexão com a internet e atualize a página.'}
       </div>
     );
   }
 
-  if (error) {
+  if (!clientSecret) {
+    console.log('[StripePaymentElement] clientSecret ainda não disponível, renderizando fallback.');
     return (
-      <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-md">
-        <p className="font-medium mb-2">
-          {language === 'en' ? 'Error initializing payment' : 'Erro ao inicializar pagamento'}
+      <div className="flex flex-col items-center justify-center p-4">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
+        <p className="text-sm text-gray-600">
+          {language === 'en' ? 'Initializing payment system...' : 'Inicializando sistema de pagamento...'}
         </p>
-        <p>{error}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-        >
-          {language === 'en' ? 'Try Again' : 'Tentar Novamente'}
-        </button>
       </div>
     );
   }
 
-  if (isLoading || !clientSecret) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-        <p className="text-gray-600">
-          {language === 'en' ? 'Setting up payment...' : 'Preparando pagamento...'}
-        </p>
-      </div>
-    );
-  }
+  const options = {
+    clientSecret,
+    appearance: {
+      theme: 'stripe' as const,
+      variables: {
+        colorPrimary: '#0570de',
+      },
+    },
+  };
 
   return (
-    <div className="bg-white rounded-lg">
-      <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
-        <StripePaymentForm 
-          clientSecret={clientSecret} 
-          onSuccess={onSuccess}
-          businessName={formData.business}
-          formId={formId}
-        />
-      </Elements>
-    </div>
+    <Elements stripe={stripePromise} options={options}>
+      <StripePaymentForm
+        clientSecret={clientSecret}
+        onSuccess={onSuccess}
+        businessName={formData.business}
+        formId={formId}
+      />
+    </Elements>
   );
 };
 

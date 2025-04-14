@@ -21,10 +21,11 @@ interface CartCheckoutProps {
   onBack: (e: React.MouseEvent) => void;
   pricingConfig?: PricingConfiguration;
   // isStripePayment prop is removed as we always use Stripe now
-  formId: string | null;
   files: FileData;
   colorPalette: string[];
   finalContent: string;
+  clientSecret: string | null;
+  currentFormId: string | null;
 }
 
 const CartCheckout: React.FC<CartCheckoutProps> = ({
@@ -32,10 +33,11 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
   onPaymentSuccess, // This prop is passed to StripePaymentElement
   onBack,
   pricingConfig,
-  formId: propFormId, // Rename prop
   files,
   colorPalette,
-  finalContent
+  finalContent,
+  clientSecret,
+  currentFormId
 }) => {
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "annual">(
     formData.selectedPlan as "monthly" | "annual"
@@ -43,9 +45,6 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
   const { language } = useLanguage();
   const navigate = useNavigate();
   const [isTestLoading, setIsTestLoading] = useState(false);
-
-  // Get formId from props or local storage as fallback
-  const currentFormId = propFormId || localStorage.getItem('form_id');
 
   // Default pricing config if none provided
   const effectivePricingConfig = pricingConfig || {
@@ -189,9 +188,6 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                   {language === 'en' ? 'Pay with Card' : 'Pagar com Cartão'}
                 </h4>
 
-                {/* LOG ADICIONADO AQUI */}
-                {console.log('>>> CartCheckout - formData ANTES de passar para StripePaymentElement:', JSON.stringify(formData, null, 2))}
-
                 {/* Stripe Payment Element (Renderizado Diretamente) */}
                 <Suspense fallback={
                   <div className="flex flex-col items-center justify-center p-4">
@@ -211,6 +207,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                     files={files}
                     colorPalette={colorPalette}
                     finalContent={finalContent}
+                    clientSecret={clientSecret}
                   />
                 </Suspense>
 
