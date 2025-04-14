@@ -12,7 +12,9 @@ import { ContactFormData, FileData } from '../types';
 import { Loader2 } from 'lucide-react';
 
 // Get the Stripe public key from environment variables
+console.log('>>> Reading import.meta.env:', JSON.stringify(import.meta.env)); 
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+console.log('>>> Value read for VITE_STRIPE_PUBLIC_KEY:', stripePublicKey);
 
 // Log para depuração
 console.log('[STRIPE] Chave pública disponível?', !!stripePublicKey);
