@@ -39,6 +39,30 @@
       "dest": "/zero-cost-website/api/process-payment-success.js"
     },
     {
+      "src": "/api/create-payment-intent",
+      "dest": "/zero-cost-website/api/create-payment-intent.js"
+    },
+    {
+      "src": "/api/store-form-data",
+      "dest": "/zero-cost-website/api/store-form-data.js"
+    },
+    {
+      "src": "/api/supabase-check",
+      "dest": "/zero-cost-website/api/supabase-check.js"
+    },
+    {
+      "src": "/api/supabase-test",
+      "dest": "/zero-cost-website/api/supabase-test.js"
+    },
+    {
+      "src": "/api/webhook",
+      "dest": "/zero-cost-website/api/webhook.js"
+    },
+    {
+      "src": "/api/hello",
+      "dest": "/zero-cost-website/api/hello.js"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/zero-cost-website/api/$1.js"
     },
@@ -49,6 +73,10 @@
     {
       "src": "/payment-success",
       "dest": "/zero-cost-website/dist/index.html"
+    },
+    {
+      "src": "/payment-test",
+      "dest": "/zero-cost-website/public/payment-test.html"
     },
     {
       "handle": "filesystem"
