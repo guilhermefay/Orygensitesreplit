@@ -197,13 +197,21 @@ const StripePaymentElement: React.FC<StripePaymentElementProps> = ({
         console.log('- Currency:', currency);
         console.log('- Form ID:', formId);
         console.log('- Plan:', plan);
-        console.log('- Form Data:', JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          business: formData.business,
-          plan: formData.selectedPlan
-        }));
-        
+        console.log('- Form Data (keys):', formData ? Object.keys(formData).join(', ') : 'formData é null/undefined');
+
+        // <<< INÍCIO DOS NOVOS LOGS >>>
+        console.log('>>> StripePaymentElement - useEffect - Antes do Fetch:');
+        console.log('>>> Props recebidas - plan:', plan);
+        console.log('>>> Props recebidas - formData:', JSON.stringify(formData, null, 2)); // Log completo do formData
+        console.log('>>> Props recebidas - formId (prop):', formId); // Log do formId vindo das props
+
+        const requestBody = {
+          plan,
+          formData,
+        };
+        console.log('>>> Corpo da Requisição (body) a ser enviado:', JSON.stringify(requestBody, null, 2));
+        // <<< FIM DOS NOVOS LOGS >>>
+
         // Call our backend API to create a payment intent
         console.log('[StripePaymentElement] Fazendo chamada para /api/create-payment-intent');
         const response = await fetch('/api/create-payment-intent', {
@@ -211,10 +219,7 @@ const StripePaymentElement: React.FC<StripePaymentElementProps> = ({
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            plan,
-            formData,
-          }),
+          body: JSON.stringify(requestBody), // Usar o requestBody logado
         });
 
         if (!response.ok) {
