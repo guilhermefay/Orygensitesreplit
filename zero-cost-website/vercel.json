@@ -1,18 +1,16 @@
-{
-  "version": 2,
-  "routes": [
-    // API routes - direciona qualquer coisa em /api/* para a função correspondente
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    // Frontend routes - direciona tudo mais para o index.html (SPA handling)
-    {
-      "handle": "filesystem" // Serve arquivos estáticos (js, css, imagens) da pasta dist
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html" // Rota fallback para o SPA
+      "version": 2,
+      "routes": [
+        {
+          "src": "/api/(.*)",
+          "dest": "/api/$1"
+        },
+        {
+          "handle": "filesystem"
+        },
+        {
+          "src": "/(.*)",
+          "dest": "/index.html"
+        }
+      ]
     }
-  ]
-}
