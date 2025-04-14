@@ -75,3 +75,4 @@ Para testar a integração com pagamentos:
 - [Documentação do Supabase](https://supabase.com/docs)
 - [Documentação da Vercel para Funções Serverless](https://vercel.com/docs/serverless-functions/introduction)
 
+
