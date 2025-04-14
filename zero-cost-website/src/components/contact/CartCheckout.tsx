@@ -46,6 +46,10 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
   const navigate = useNavigate();
   const [isTestLoading, setIsTestLoading] = useState(false);
 
+  // >>> LOG ADICIONADO <<<
+  console.log("[CartCheckout] Recebeu clientSecret:", clientSecret);
+  console.log("[CartCheckout] Recebeu currentFormId:", currentFormId);
+
   // Default pricing config if none provided
   const effectivePricingConfig = pricingConfig || {
     monthly: 89.9,
@@ -189,27 +193,36 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                 </h4>
 
                 {/* Stripe Payment Element (Renderizado Diretamente) */}
-                <Suspense fallback={
+                {!clientSecret ? (
                   <div className="flex flex-col items-center justify-center p-4">
                     <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
                     <p className="text-sm text-gray-600">
-                      {language === 'en' ? 'Loading payment form...' : 'Carregando formulário de pagamento...'}
+                      {language === 'en' ? 'Initializing payment system...' : 'Inicializando sistema de pagamento...'}
                     </p>
                   </div>
-                }>
-                  <StripePaymentElement
-                    formData={formData}
-                    onSuccess={handleStripeSuccess}
-                    formId={currentFormId}
-                    plan={selectedPlan}
-                    amount={price.totalPrice}
-                    currency={effectivePricingConfig.currency}
-                    files={files}
-                    colorPalette={colorPalette}
-                    finalContent={finalContent}
-                    clientSecret={clientSecret}
-                  />
-                </Suspense>
+                ) : (
+                  <Suspense fallback={
+                    <div className="flex flex-col items-center justify-center p-4">
+                      <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
+                      <p className="text-sm text-gray-600">
+                        {language === 'en' ? 'Loading payment form...' : 'Carregando formulário de pagamento...'}
+                      </p>
+                    </div>
+                  }>
+                    <StripePaymentElement
+                      formData={formData}
+                      onSuccess={handleStripeSuccess}
+                      formId={currentFormId}
+                      plan={selectedPlan}
+                      amount={price.totalPrice}
+                      currency={effectivePricingConfig.currency}
+                      files={files}
+                      colorPalette={colorPalette}
+                      finalContent={finalContent}
+                      clientSecret={clientSecret}
+                    />
+                  </Suspense>
+                )}
 
                 {/* Botão Testar com R$ 1,00 */}
                 <div className="mt-6 pt-4 border-t border-gray-200">

@@ -54,6 +54,8 @@ const FormContentContainer: React.FC<FormContentContainerProps> = ({
     isStripePayment,
     useStripeRedirect: useStripeRedirect === true ? true : false // Força valor booleano explícito
   });
+  console.log("[FormContentContainer] Recebeu clientSecret:", clientSecret);
+  console.log("[FormContentContainer] Recebeu currentFormId:", currentFormId);
 
   return (
     <div className="mt-6 mb-4 relative">
