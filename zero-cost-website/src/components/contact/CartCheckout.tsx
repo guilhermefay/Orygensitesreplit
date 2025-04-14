@@ -1,4 +1,3 @@
-
 import React, { useState, Suspense, lazy } from "react";
 import OrderSummary from "./cart/OrderSummary";
 import PlanBenefits from "./cart/PlanBenefits";
@@ -190,6 +189,9 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                   {language === 'en' ? 'Pay with Card' : 'Pagar com Cartão'}
                 </h4>
 
+                {/* LOG ADICIONADO AQUI */}
+                {console.log('>>> CartCheckout - formData ANTES de passar para StripePaymentElement:', JSON.stringify(formData, null, 2))}
+
                 {/* Stripe Payment Element (Renderizado Diretamente) */}
                 <Suspense fallback={
                   <div className="flex flex-col items-center justify-center p-4">
@@ -199,16 +201,13 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                     </p>
                   </div>
                 }>
-                  {/* Passa a função handleStripeSuccess como onSuccess */}
                   <StripePaymentElement
                     formData={formData}
                     onSuccess={handleStripeSuccess}
-                    formId={currentFormId} // Passa o formId atual
+                    formId={currentFormId}
                     plan={selectedPlan}
-                    // Não precisamos passar amount/currency aqui, pois o backend calcula
-                    // Passamos os outros dados caso o StripePaymentElement precise deles internamente
-                    amount={price.totalPrice} // Prop mantida para possível uso interno
-                    currency={effectivePricingConfig.currency} // Prop mantida
+                    amount={price.totalPrice}
+                    currency={effectivePricingConfig.currency}
                     files={files}
                     colorPalette={colorPalette}
                     finalContent={finalContent}
