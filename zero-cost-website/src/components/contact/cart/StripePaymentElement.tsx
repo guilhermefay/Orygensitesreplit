@@ -12,13 +12,17 @@ import { ContactFormData, FileData } from '../types';
 import { Loader2 } from 'lucide-react';
 
 // Get the Stripe public key from environment variables
-const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+// >>> TESTE: COMENTANDO LEITURA DA ENV VAR <<<
+// const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
 
 // Log para depuração
-console.log('[STRIPE] Chave pública disponível?', !!stripePublicKey);
+// console.log('[STRIPE] Chave pública disponível?', !!stripePublicKey);
 
-// Usar fallback para desenvolvimento/teste se necessário
-const finalStripeKey = stripePublicKey || 'pk_test_51OzEGcBL7JbfJBGnpnuFTzG66XCbiGF3Bqf4fxrSWBt3N9M7lDnTSOkqnYb7QFdnWjQiuDcxgAzEfNoDwuYAu9gw00YhGbxQEV';
+// >>> TESTE: HARDCODING CHAVE PÚBLICA LIVE <<<
+const hardcodedPublicKey = 'pk_live_51RBEdELRk2IJd0GrewO2fEqn3yglI3o9t1wk1sewM0CZU6aHVl4rP60zY76LY4k3eVl4lXXvUFikEMo88m00h3V3g78j';
+console.log('[STRIPE] USANDO CHAVE PÚBLICA HARDCODED (TESTE):', hardcodedPublicKey.substring(0, 10) + '...');
+const finalStripeKey = hardcodedPublicKey; // <<< USAR A CHAVE HARDCODED >>>
+// const finalStripeKey = stripePublicKey || 'pk_test_51OzEGcBL7JbfJBGnpnuFTzG66XCbiGF3Bqf4fxrSWBt3N9M7lDnTSOkqnYb7QFdnWjQiuDcxgAzEfNoDwuYAu9gw00YhGbxQEV'; // <<< Linha original comentada >>>
 
 // Initialize the Stripe object outside of the component to avoid re-creating it on every render
 let stripePromise: Promise<any> | null = null;
