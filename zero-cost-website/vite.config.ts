@@ -7,12 +7,12 @@ import path from "path";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
+    host: "0.0.0.0",
     port: 8080,
     proxy: {
-      // Redirecionar solicitações /api para o servidor Express na porta 5001
+      // Redirecionar solicitações /api para o servidor Express na porta 5000
       '/api': {
-        target: 'http://localhost:5001',
+        target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
       }

@@ -161,6 +161,12 @@ app.get('/api/debug-session', (req, res) => {
   }
 });
 
+// Redirecionar a rota raiz para a página de diagnóstico de pagamento
+app.get('/', (req, res) => {
+  console.log('[ROOT] Redirecionando para página de diagnóstico de pagamento');
+  res.sendFile(path.join(__dirname, 'public', 'payment-test.html'));
+});
+
 // Rota de diagnóstico para verificar configuração
 app.get('/api/diagnostics', (req, res) => {
   res.json({
