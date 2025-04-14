@@ -31,5 +31,9 @@
     "stripe": "^18.0.0",
     "tailwindcss": "^4.1.3",
     "vite": "^6.2.6"
+  }, // <--- Vírgula aqui
+  "overrides": { // <--- Seção adicionada aqui
+    "esbuild": "0.21.5"
   }
+  // Se você tiver "devDependencies" ou outras seções, elas viriam aqui, separadas por vírgula também.
 }

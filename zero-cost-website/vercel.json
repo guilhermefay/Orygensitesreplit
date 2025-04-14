@@ -1,29 +1,18 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
   "routes": [
+    // API routes - direciona qualquer coisa em /api/* para a função correspondente
     {
       "src": "/api/(.*)",
       "dest": "/api/$1"
     },
+    // Frontend routes - direciona tudo mais para o index.html (SPA handling)
     {
-      "handle": "filesystem"
+      "handle": "filesystem" // Serve arquivos estáticos (js, css, imagens) da pasta dist
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/index.html" // Rota fallback para o SPA
     }
   ]
 }
