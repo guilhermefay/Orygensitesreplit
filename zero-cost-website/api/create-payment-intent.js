@@ -1,63 +1,43 @@
 const Stripe = require('stripe');
 const { createClient } = require('@supabase/supabase-js');
+const { v4: uuidv4 } = require('uuid'); // Importar v4 do pacote uuid
 
-// Inicializar o Stripe
+// Validar Variáveis de Ambiente Essenciais
 const stripeKey = process.env.STRIPE_SECRET_KEY;
-console.log(`[STRIPE] Chave configurada? ${!!stripeKey}`);
+const supabaseUrl = process.env.SUPABASE_URL;
+// IMPORTANTE: Garanta que SUPABASE_SERVICE_KEY contém sua chave SERVICE ROLE secreta do Supabase nas variáveis de ambiente da Vercel
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+
+if (!stripeKey || !supabaseUrl || !supabaseServiceKey) {
+  console.error('[FATAL] Variáveis de ambiente essenciais (Stripe ou Supabase) não configuradas.');
+  // Para Vercel, retornar erro 500 é apropriado
+  module.exports = (req, res) => {
+     res.status(500).json({ error: 'Internal Server Configuration Error' });
+  };
+  throw new Error('Variáveis de ambiente essenciais não configuradas.');
+}
+
+// Inicializar Clientes FORA do handler para reutilização (melhor performance)
 const stripe = new Stripe(stripeKey);
+const supabaseClient = createClient(supabaseUrl, supabaseServiceKey); // Usar Service Role Key
 
-// Configurar cliente Supabase
-const SUPABASE_URL_FALLBACK = "https://gltluwhobeprwfzzcmzw.supabase.co";
-const SUPABASE_KEY_FALLBACK = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsdGx1d2hvYmVwcndmenpjbXp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEyMjQ3MDUsImV4cCI6MjA1NjgwMDcwNX0.gzJXXUnB5THokP6yEAIHM65IOCNWGcKGAN7iKbWegws";
+console.log('[CONFIG] Clientes Stripe e Supabase inicializados.');
 
-let supabaseUrl = process.env.SUPABASE_URL;
-let supabaseKey = process.env.SUPABASE_KEY; // Usar a chave ANON pública aqui
-let usingFallback = false;
-
-if (!supabaseUrl) {
-  console.warn('[SUPABASE FALLBACK] Variável SUPABASE_URL não encontrada, usando fallback.');
-  supabaseUrl = SUPABASE_URL_FALLBACK;
-  usingFallback = true;
-}
-
-if (!supabaseKey) {
-  console.warn('[SUPABASE FALLBACK] Variável SUPABASE_KEY não encontrada, usando fallback (chave ANON).');
-  supabaseKey = SUPABASE_KEY_FALLBACK;
-  usingFallback = true;
-}
-
-// Verificar se temos valores válidos após tentar ler do env e do fallback
-if (!supabaseUrl || !supabaseKey) {
-  console.error('[SUPABASE FATAL] URL ou Chave Supabase inválidas mesmo após fallback. Impossível continuar.');
-  // Em um cenário real, você poderia lançar um erro ou parar a inicialização
-  throw new Error('Configuração inválida do Supabase.'); 
-}
-
-if (usingFallback) {
-    console.warn('[SUPABASE FALLBACK] Usando URL/Key Supabase fallback hardcoded!');
-}
-
-// Criar o cliente com os valores finais
-const supabaseClient = createClient(supabaseUrl, supabaseKey);
-console.log('[SUPABASE CONFIG] Cliente Supabase criado com sucesso.');
-
-// Função para gerar UUID
-function uuidv4() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
-
+// Função Handler para Vercel
 module.exports = async (req, res) => {
-  // Habilitar CORS
+  // Habilitar CORS - Simplificado
+  const allowedOrigin = process.env.NODE_ENV === 'production'
+    ? 'https://www.orygensites.com' // <-- SUBSTITUA pelo seu domínio de produção real se for diferente
+    : '*';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
 
-  // Tratar preflight request
+  // Tratar preflight request (OPTIONS)
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -68,61 +48,58 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Extrair dados do corpo da requisição
     const { plan, formData } = req.body;
-    
+
     if (!plan || !formData) {
-      console.error('[CREATE PAYMENT INTENT] Dados insuficientes:', { 
-        planRecebido: !!plan, 
-        formDataRecebido: !!formData 
-      });
+      console.error('[PAYMENT INTENT] Dados insuficientes:', { plan: !!plan, formData: !!formData });
       return res.status(400).json({ error: 'plan e formData são obrigatórios' });
     }
 
-    console.log('[CREATE PAYMENT INTENT] Dados recebidos:', { 
-      plan, 
-      formDataKeys: Object.keys(formData) 
-    });
+    console.log('[PAYMENT INTENT] Dados recebidos:', { plan, formDataKeys: Object.keys(formData) });
 
-    // Verificar dados mínimos do formulário
-    if (!formData.name || !formData.email || !formData.phone || !formData.business) {
-      console.error('[CREATE PAYMENT INTENT] Dados de formulário incompletos:', formData);
+    // Validação Mínima (Pode ser mais robusta) - Certifique-se que businessDetails está aqui
+    if (!formData.name || !formData.email || !formData.phone || !formData.business || !formData.businessDetails) {
+      console.error('[PAYMENT INTENT] Dados de formulário incompletos:', formData);
       return res.status(400).json({ error: 'Dados de formulário incompletos' });
     }
 
-    // 1. Calcular o valor com base no plano
+    // 1. Calcular valor e descrição
     let amount;
     let description;
-    let currency = 'brl';
+    let currency = 'brl'; // Padrão BRL
 
-    // Definir valores com base no plano
-    if (plan === 'test') {
-      // Plano de teste - valor mínimo para Stripe (R$ 1,00)
-      amount = 100; // 100 centavos = R$ 1,00
-      description = 'Pagamento de teste - R$ 1,00';
-    } else if (plan === 'monthly') {
-      amount = 9900; // 9900 centavos = R$ 99,00
-      description = 'Plano Mensal - Website Profissional';
-    } else if (plan === 'annual') {
-      amount = 89900; // 89900 centavos = R$ 899,00
-      description = 'Plano Anual - Website Profissional';
-    } else if (plan === 'promotion') {
-      amount = 49900; // 49900 centavos = R$ 499,00
-      description = 'Promoção Especial - Website Profissional';
-    } else if (plan === 'promotion_usd') {
-      amount = 9900; // 9900 centavos = $99 USD
-      currency = 'usd';
-      description = 'Special Promotion - Professional Website';
-    } else {
-      console.error('[CREATE PAYMENT INTENT] Plano desconhecido:', plan);
-      return res.status(400).json({ error: 'Plano desconhecido' });
+    switch (plan) {
+      case 'test':
+        amount = 100; // R$ 1,00
+        description = 'Pagamento de teste - R$ 1,00';
+        break;
+      case 'monthly':
+        amount = 9900; // R$ 99,00
+        description = 'Plano Mensal - Website Profissional';
+        break;
+      case 'annual':
+        amount = 89900; // R$ 899,00
+        description = 'Plano Anual - Website Profissional';
+        break;
+      case 'promotion':
+        amount = 49900; // R$ 499,00
+        description = 'Promoção Especial - Website Profissional';
+        break;
+      case 'promotion_usd':
+        amount = 9900; // $99 USD
+        currency = 'usd';
+        description = 'Special Promotion - Professional Website';
+        break;
+      default:
+        console.error('[PAYMENT INTENT] Plano desconhecido:', plan);
+        return res.status(400).json({ error: 'Plano desconhecido' });
     }
 
-    console.log(`[CREATE PAYMENT INTENT] Calculado valor ${amount} centavos para plano ${plan}`);
+    console.log(`[PAYMENT INTENT] Calculado: ${amount} ${currency.toUpperCase()} para plano ${plan}`);
 
-    // 2. Salvar dados no Supabase com status 'pending_payment'
-    const formId = uuidv4();
-    console.log('[CREATE PAYMENT INTENT] ID gerado para o formulário:', formId);
+    // 2. Salvar no Supabase
+    const formId = uuidv4(); // Usar pacote uuid
+    console.log('[PAYMENT INTENT] ID gerado:', formId);
 
     const supabaseData = {
       id: formId,
@@ -130,34 +107,31 @@ module.exports = async (req, res) => {
       email: formData.email,
       phone: formData.phone,
       business: formData.business,
-      business_details: formData.business_details || '',
-      original_form_id: formData.original_form_id || formId,
+      business_details: formData.businessDetails, // Usar o nome corrigido
       selected_plan: plan,
       payment_status: 'pending_payment',
       payment_id: null,
       payment_date: null,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      // Adicionar outros campos se necessário
     };
 
-    console.log('[CREATE PAYMENT INTENT] Salvando dados no Supabase:', {
-      id: supabaseData.id,
-      business: supabaseData.business,
-      plan: supabaseData.selected_plan
-    });
+    console.log('[PAYMENT INTENT] Salvando no Supabase:', { id: formId, plan });
 
     const { data: insertedData, error: supabaseError } = await supabaseClient
-      .from('form_submissions')
+      .from('form_submissions') // Confirme o nome da tabela
       .insert(supabaseData)
       .select();
 
     if (supabaseError) {
-      console.error('[CREATE PAYMENT INTENT] Erro ao salvar no Supabase:', supabaseError);
-      return res.status(500).json({ error: 'Erro ao salvar dados do formulário', details: supabaseError.message });
+      console.error('[PAYMENT INTENT] Erro Supabase:', supabaseError);
+      return res.status(500).json({ error: 'Erro ao salvar dados', details: supabaseError.message });
     }
 
-    console.log('[CREATE PAYMENT INTENT] Dados salvos no Supabase com sucesso:', insertedData);
+    console.log('[PAYMENT INTENT] Dados salvos no Supabase:', insertedData ? 'Sucesso' : 'Falha (verificar RLS/políticas)');
 
     // 3. Criar PaymentIntent no Stripe
+    console.log('[PAYMENT INTENT] Criando Payment Intent no Stripe...');
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
       currency: currency,
@@ -165,19 +139,15 @@ module.exports = async (req, res) => {
       metadata: {
         formId: formId,
         plan: plan,
-        business: formData.business
+        business_name: formData.business,
       },
-      description: description
+      description: description,
     });
 
-    console.log('[CREATE PAYMENT INTENT] PaymentIntent criado com sucesso:', {
-      id: paymentIntent.id,
-      amount: paymentIntent.amount,
-      clientSecret: paymentIntent.client_secret ? 'Gerado' : 'Não gerado'
-    });
+    console.log('[PAYMENT INTENT] Payment Intent criado:', { id: paymentIntent.id });
 
-    // 4. Responder com o clientSecret e o formId
-    return res.status(200).json({
+    // 4. Responder ao Frontend
+    res.status(200).json({
       success: true,
       clientSecret: paymentIntent.client_secret,
       formId: formId,
@@ -185,11 +155,10 @@ module.exports = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('[CREATE PAYMENT INTENT] Erro:', error);
+    console.error('[PAYMENT INTENT] Erro inesperado:', error);
     return res.status(500).json({
-      error: 'Erro ao processar solicitação',
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: 'Erro interno do servidor',
+      message: process.env.NODE_ENV !== 'production' ? error.message : undefined,
     });
   }
 };
