@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useFormData } from "./useFormData";
 import { useFormNavigation } from "./useFormNavigation";
@@ -47,7 +46,8 @@ export const useContactForm = (
     submitForm, // Mantido, mas não será chamado ao sair do Step 3
     formId, // Mantido
     isSubmitting, // Mantido
-    setShowSuccessMessage // Mantido
+    setShowSuccessMessage, // Mantido
+    showSuccessMessage // Mantido
   } = useFormSubmission();
 
   const { language } = useLanguage(); // Get language context
@@ -135,8 +135,8 @@ export const useContactForm = (
     removeColor,
     setFinalContent, // Pass through
     setInitialStep,
-    showSuccessMessage, // Pass through
-    setShowSuccessMessage // Pass through
+    showSuccessMessage,
+    setShowSuccessMessage
     // isAiEditing and editContent are removed as content generation was disabled
   };
 };
