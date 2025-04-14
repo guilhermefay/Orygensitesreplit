@@ -1,8 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "cd zero-cost-website && npm install && npm run build",
-  "installCommand": "cd zero-cost-website && npm install",
-  "outputDirectory": "zero-cost-website/dist",
   "builds": [
     {
       "src": "zero-cost-website/api/*.js",
@@ -86,11 +83,5 @@
       "dest": "/zero-cost-website/dist/index.html",
       "status": 200
     }
-  ],
-  "env": {
-    "STRIPE_SECRET_KEY": "@stripe_secret_key",
-    "VITE_STRIPE_PUBLIC_KEY": "@vite_stripe_public_key",
-    "SUPABASE_URL": "@supabase_url",
-    "SUPABASE_KEY": "@supabase_key"
-  }
+  ]
 }
