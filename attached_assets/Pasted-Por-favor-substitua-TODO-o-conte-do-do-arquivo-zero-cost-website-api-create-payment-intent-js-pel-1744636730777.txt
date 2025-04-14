@@ -1,3 +1,6 @@
+Por favor, substitua TODO o conteúdo do arquivo `zero-cost-website/api/create-payment-intent.js` pelo código Javascript abaixo. Certifique-se de apagar todo o conteúdo antigo antes de colar o novo.
+
+```javascript
 const Stripe = require('stripe');
 const { createClient } = require('@supabase/supabase-js');
 const { v4: uuidv4 } = require('uuid'); // Importar v4 do pacote uuid
@@ -162,3 +165,6 @@ module.exports = async (req, res) => {
     });
   }
 };
+```
+
+Após ele confirmar que substituiu o conteúdo, precisaremos fazer o último commit e push.
