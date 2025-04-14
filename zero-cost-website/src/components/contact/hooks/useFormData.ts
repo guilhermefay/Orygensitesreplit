@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { ContactFormData, FileData } from '../types';
 import { PricingConfiguration } from '@/lib/config/pricing';
@@ -11,7 +10,7 @@ export const useFormData = (initialPlan: string = 'annual', pricingConfig?: Pric
     phone: '',
     selectedPlan: initialPlan as "annual" | "monthly",
     business: '',
-    description: '',
+    businessDetails: '',
     industry: '',
     competitors: '',
     goals: '',
@@ -122,7 +121,7 @@ export const useFormData = (initialPlan: string = 'annual', pricingConfig?: Pric
       phone: '',
       selectedPlan: initialPlan as "monthly" | "annual",
       business: '',
-      description: '',
+      businessDetails: '',
       industry: '',
       competitors: '',
       goals: '',

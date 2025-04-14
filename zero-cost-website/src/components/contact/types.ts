@@ -1,11 +1,9 @@
-
 export interface ContactFormData {
   name: string;
   email: string;
   phone: string;
   selectedPlan: string;
   business: string;
-  description: string;
   industry: string;
   competitors: string;
   goals: string;
@@ -13,7 +11,7 @@ export interface ContactFormData {
   style: string;
   logo: boolean;
   additional: string;
-  businessDetails?: string;
+  businessDetails: string;
 }
 
 export interface FileData {
