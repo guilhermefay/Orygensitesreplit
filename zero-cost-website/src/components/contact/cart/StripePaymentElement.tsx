@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ContactFormData, FileData } from '../types';
 import { Loader2 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 // Remover hardcoding e usar variável de ambiente do Vite
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY!;
@@ -85,12 +86,19 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
             ? 'Payment successful!' 
             : 'Pagamento realizado com sucesso!'
         );
+        // Disparar confetes
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
         // Store formId in localStorage for potential page refreshes or redirects
         localStorage.setItem('payment_id', paymentIntent.id);
         // Call the success handler with the payment intent ID and formId
         onSuccess(paymentIntent.id, formId);
       } else {
         console.log('Payment status:', paymentIntent?.status);
+        setIsLoading(false);
         setErrorMessage(
           language === 'en' 
             ? 'Payment is being processed. Please wait...' 
@@ -112,14 +120,20 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <PaymentElement />
-      
+      {isLoading && (
+        <div className="flex flex-col items-center justify-center p-4">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
+          <p className="text-sm text-gray-600">
+            {language === 'en' ? 'Aguarde um momento...' : 'Aguarde um momento...'}
+          </p>
+        </div>
+      )}
+      {!isLoading && <PaymentElement />}
       {errorMessage && (
         <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
           {errorMessage}
         </div>
       )}
-      
       <button
         type="submit"
         disabled={!stripe || isLoading}
@@ -127,17 +141,13 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
       >
         {isLoading ? (
           <>
-            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            {language === 'en' ? 'Processing...' : 'Processando...'}
+            <Loader2 className="h-5 w-5 animate-spin text-white mr-2" />
+            {language === 'en' ? 'Processando...' : 'Processando...'}
           </>
         ) : (
           language === 'en' ? 'Pay Now' : 'Pagar Agora'
         )}
       </button>
-      
       <div className="flex items-center justify-center gap-2 mt-2">
         <div className="text-xs text-gray-500 text-center">
           {language === 'en' 

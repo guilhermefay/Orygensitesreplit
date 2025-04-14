@@ -97,47 +97,13 @@ module.exports = async (req, res) => {
 
     console.log(`[PAYMENT INTENT] Calculado: ${amount} ${currency.toUpperCase()} para plano ${plan}`);
 
-    // 2. Salvar no Supabase
-    const formId = uuidv4(); // Usar pacote uuid
-    console.log('[PAYMENT INTENT] ID gerado:', formId);
-
-    const supabaseData = {
-      id: formId,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      business: formData.business,
-      business_details: formData.businessDetails, // Usar o nome corrigido
-      selected_plan: plan,
-      payment_status: 'pending_payment',
-      payment_id: null,
-      payment_date: null,
-      created_at: new Date().toISOString(),
-      // Adicionar outros campos se necessário
-    };
-
-    console.log('[PAYMENT INTENT] Salvando no Supabase:', { id: formId, plan });
-
-    const { data: insertedData, error: supabaseError } = await supabaseClient
-      .from('form_submissions') // Confirme o nome da tabela
-      .insert(supabaseData)
-      .select();
-
-    if (supabaseError) {
-      console.error('[PAYMENT INTENT] Erro Supabase:', supabaseError);
-      return res.status(500).json({ error: 'Erro ao salvar dados', details: supabaseError.message });
-    }
-
-    console.log('[PAYMENT INTENT] Dados salvos no Supabase:', insertedData ? 'Sucesso' : 'Falha (verificar RLS/políticas)');
-
-    // 3. Criar PaymentIntent no Stripe
+    // 2. Criar PaymentIntent no Stripe
     console.log('[PAYMENT INTENT] Criando Payment Intent no Stripe...');
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
       currency: currency,
       payment_method_types: ['card'],
       metadata: {
-        formId: formId,
         plan: plan,
         business_name: formData.business,
       },
@@ -146,11 +112,46 @@ module.exports = async (req, res) => {
 
     console.log('[PAYMENT INTENT] Payment Intent criado:', { id: paymentIntent.id });
 
+    // Só salvar no Supabase se o pagamento for aprovado
+    if (paymentIntent.status === 'succeeded') {
+      const formId = uuidv4(); // Usar pacote uuid
+      console.log('[PAYMENT INTENT] ID gerado:', formId);
+
+      const supabaseData = {
+        id: formId,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        business: formData.business,
+        business_details: formData.businessDetails, // Usar o nome corrigido
+        selected_plan: plan,
+        payment_status: 'paid',
+        payment_id: paymentIntent.id,
+        payment_date: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        // Adicionar outros campos se necessário
+      };
+
+      console.log('[PAYMENT INTENT] Salvando no Supabase:', { id: formId, plan });
+
+      const { data: insertedData, error: supabaseError } = await supabaseClient
+        .from('form_submissions') // Confirme o nome da tabela
+        .insert(supabaseData)
+        .select();
+
+      if (supabaseError) {
+        console.error('[PAYMENT INTENT] Erro Supabase:', supabaseError);
+        return res.status(500).json({ error: 'Erro ao salvar dados', details: supabaseError.message });
+      }
+
+      console.log('[PAYMENT INTENT] Dados salvos no Supabase:', insertedData ? 'Sucesso' : 'Falha (verificar RLS/políticas)');
+    }
+
     // 4. Responder ao Frontend
     res.status(200).json({
       success: true,
       clientSecret: paymentIntent.client_secret,
-      formId: formId,
+      formId: paymentIntent.metadata.formId || null,
       amount: amount
     });
 
