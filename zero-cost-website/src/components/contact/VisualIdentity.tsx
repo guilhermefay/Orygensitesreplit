@@ -64,26 +64,28 @@ const VisualIdentity: React.FC<VisualIdentityProps> = ({
   };
 
   const renderLogoPreview = () => {
-    if (!files.logo) return null;
+    if (!files.logo || files.logo.length === 0) return null;
     
     return (
-      <div className="mt-3">
-        <div className="relative group inline-block overflow-hidden rounded-lg bg-gray-50 p-2 border border-gray-200">
-          <img 
-            src={URL.createObjectURL(files.logo)} 
-            alt={`Logo`} 
-            className="h-16 object-contain rounded-md transition-transform duration-300 group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <button
-              type="button"
-              className="bg-red-500 text-white rounded-full p-1 transform transition-transform duration-300 hover:scale-110"
-              onClick={() => removeFile('logo')}
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+      <div className="grid grid-cols-3 gap-2 mt-3">
+        {files.logo.map((file, index) => (
+          <div key={index} className="relative group overflow-hidden rounded-lg bg-gray-50 p-2 border border-gray-200">
+            <img 
+              src={URL.createObjectURL(file)} 
+              alt={`Logo ${index + 1}`}
+              className="h-16 w-full object-contain rounded-md transition-transform duration-300 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <button
+                type="button"
+                className="bg-red-500 text-white rounded-full p-1 transform transition-transform duration-300 hover:scale-110"
+                onClick={() => removeFile('logo', index)}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
+        ))}
       </div>
     );
   };
@@ -174,6 +176,7 @@ const VisualIdentity: React.FC<VisualIdentityProps> = ({
                 type="file"
                 className="hidden"
                 accept="image/*"
+                multiple
                 onChange={(e) => handleFileChange('logo', e)}
               />
             </label>
@@ -202,6 +205,7 @@ const VisualIdentity: React.FC<VisualIdentityProps> = ({
                 type="file"
                 className="hidden"
                 accept="image/*"
+                multiple
                 onChange={(e) => handleFileChange('photos', e)}
               />
             </label>

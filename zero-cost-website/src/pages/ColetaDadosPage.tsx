@@ -44,7 +44,8 @@ const ColetaDadosPage: React.FC = () => {
   const handleFileChange = (type: 'photos' | 'logo', e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       if (type === 'logo') {
-        setFiles(prev => ({ ...prev, logo: e.target.files![0] }));
+        // Armazenar SEMPRE como array para logo
+        setFiles(prev => ({ ...prev, logo: Array.from(e.target.files!) })); 
       } else {
         setFiles(prev => ({ ...prev, photos: Array.from(e.target.files!) }));
       }
