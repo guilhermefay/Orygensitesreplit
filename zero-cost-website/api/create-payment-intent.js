@@ -110,6 +110,13 @@ module.exports = async (req, res) => {
         business_name: formData.business || 'N/A',
       },
       description: description,
+      payment_method_options: {
+        card: {
+          installments: {
+            enabled: true
+          }
+        }
+      }
     });
 
     console.log('[PAYMENT INTENT] Payment Intent criado:', { id: paymentIntent.id });

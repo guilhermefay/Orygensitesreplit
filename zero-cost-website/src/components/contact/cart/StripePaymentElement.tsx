@@ -67,10 +67,9 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
       const confirmResult = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          // Definir return_url aqui é um fallback, mas o ideal é tratar no código
           return_url: `${window.location.origin}/success?formId=${formId}`,
         },
-        redirect: 'if_required', // Mantém 'if_required', mas trataremos o resultado
+        redirect: 'if_required'
       });
 
       // LOG ADICIONADO: Resultado IMEDIATO de confirmPayment
