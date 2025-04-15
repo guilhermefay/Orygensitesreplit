@@ -79,6 +79,40 @@ module.exports = async (req, res) => {
     
     // Tratar eventos específicos
     switch (event.type) {
+      case 'checkout.session.completed':
+        const session = event.data.object;
+        console.log(`[WEBHOOK] Checkout Session Completed: ${session.id}`);
+
+        if (session.payment_status === 'paid') {
+            console.log(`[WEBHOOK] Pagamento confirmado para sessão: ${session.id}`);
+            if (session.metadata && session.metadata.formId) {
+                const formId = session.metadata.formId;
+                const paymentIntentId = session.payment_intent;
+
+                console.log(`[WEBHOOK] Associado ao formId: ${formId}, PaymentIntent: ${paymentIntentId}`);
+
+                const { data, error } = await supabaseClient
+                    .from('form_submissions')
+                    .update({
+                        payment_status: 'paid',
+                        payment_id: paymentIntentId || session.id,
+                        payment_date: new Date().toISOString()
+                    })
+                    .eq('id', formId)
+                    .select();
+
+                if (error) {
+                    console.error(`[WEBHOOK] Erro ao atualizar Supabase para formId ${formId}: ${error.message}`);
+                } else {
+                    console.log(`[WEBHOOK] Atualizado com sucesso no Supabase para formId: ${formId}`);
+                }
+            } else {
+                console.warn(`[WEBHOOK] Checkout Session ${session.id} completada sem formId nos metadados.`);
+            }
+        } else {
+             console.log(`[WEBHOOK] Checkout Session ${session.id} completada com status: ${session.payment_status}`);
+        }
+        break;
       case 'payment_intent.succeeded':
         const paymentIntent = event.data.object;
         console.log(`[WEBHOOK] PaymentIntent bem-sucedido: ${paymentIntent.id}`);

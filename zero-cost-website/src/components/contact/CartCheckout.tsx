@@ -1,47 +1,50 @@
-import React, { useState } from "react";
-import OrderSummary from "./cart/OrderSummary";
-import PlanBenefits from "./cart/PlanBenefits";
-import PeriodSelector from "./cart/PeriodSelector";
-import PriceDisplay from "./cart/PriceDisplay";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { ContactFormData, FileData } from "./types";
-// Removed PayPalCheckout import as it's unused
+import { ContactFormData } from "./types";
 import { PricingConfiguration } from "@/lib/config/pricing";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { loadStripe, Stripe } from '@stripe/stripe-js';
 
-// Lazy load the StripePaymentElement
-// const StripePaymentElement = lazy(() => import('./cart/StripePaymentElement'));
-import StripePaymentElement from './cart/StripePaymentElement';
+// Chave pública do Stripe (deve vir das variáveis de ambiente)
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 interface CartCheckoutProps {
   formData: ContactFormData;
-  onPaymentSuccess: (paymentId: string) => void;
   onBack: (e: React.MouseEvent) => void;
   pricingConfig?: PricingConfiguration;
-  clientSecret: string | null;
   currentFormId: string | null;
 }
 
 const CartCheckout: React.FC<CartCheckoutProps> = ({
   formData,
-  onPaymentSuccess,
   onBack,
   pricingConfig,
-  clientSecret,
   currentFormId
 }) => {
   const selectedPlan = formData.selectedPlan as "monthly" | "annual" | "promotion" | "promotion_usd" | "test";
   const { language } = useLanguage();
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [stripe, setStripe] = useState<Stripe | null>(null);
 
-  // >>> LOG ADICIONADO <<<
-  console.log("[CartCheckout] Recebeu clientSecret:", clientSecret);
   console.log("[CartCheckout] Recebeu currentFormId:", currentFormId);
 
-  // Default pricing config if none provided
+  // Carrega a instância do Stripe
+  useEffect(() => {
+    stripePromise.then(stripeInstance => {
+      if (stripeInstance) {
+        setStripe(stripeInstance);
+        console.log('[CartCheckout] Instância do Stripe carregada.');
+      } else {
+        console.error('[CartCheckout] Falha ao carregar instância do Stripe.');
+        toast.error(language === 'en' ? 'Failed to load payment system. Please try again.' : 'Falha ao carregar sistema de pagamento. Tente novamente.');
+      }
+    });
+  }, [language]);
+
+  // --- REMOVER LÓGICA DE PREÇO SE NÃO FOR EXIBIR ---
+  // (Mantido por enquanto caso queira exibir o valor no botão ou em outro lugar)
   const effectivePricingConfig = pricingConfig || {
     monthly: 89.9,
     annual: 598.80,
@@ -53,56 +56,84 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
     savings: 480.75,
     savingsPercentage: 91,
   };
-
-  // Calculate the price based on the selected plan
   const price = {
     plan: selectedPlan,
     totalPrice:
       selectedPlan === "monthly"
-        ? effectivePricingConfig.monthly
-        : effectivePricingConfig.annual,
+        ? effectivePricingConfig.monthly * 100 // Enviar em centavos para API se necessário
+        : effectivePricingConfig.annual * 100, // Enviar em centavos
     currency: effectivePricingConfig.currency,
   };
+   // --- FIM LÓGICA DE PREÇO ---
 
-  console.log("CartCheckout - Renderizando Etapa 2 (Pagamento)");
-  console.log("CartCheckout - Form ID:", currentFormId);
-  console.log("CartCheckout - Plano Selecionado:", selectedPlan);
+  console.log("CartCheckout (Checkout Mode) - Renderizando");
+  console.log("CartCheckout (Checkout Mode) - Form ID:", currentFormId);
+  console.log("CartCheckout (Checkout Mode) - Plano Selecionado:", selectedPlan);
 
-  // Função de callback para sucesso do Stripe - NAVEGAR PARA NOVA PÁGINA
-  const handleStripeSuccess = (paymentId: string, formIdFromElement: string) => {
-    console.log(`>>> CartCheckout - handleStripeSuccess INICIADO. paymentId: ${paymentId}, formId: ${formIdFromElement}`);
-    if (!formIdFromElement) {
-       console.error('>>> CartCheckout - handleStripeSuccess ERRO: formId recebido do elemento está vazio ou nulo!');
-       toast.error('Erro crítico ao processar ID do formulário pós-pagamento. Contate o suporte.');
-       // Tentar recuperar do localStorage como último recurso?
-       const storedId = localStorage.getItem('form_id');
-       if(storedId) {
-           console.log('>>> CartCheckout - handleStripeSuccess: Usando formId recuperado do localStorage:', storedId);
-           formIdFromElement = storedId;
-       } else {
-          console.error('>>> CartCheckout - handleStripeSuccess ERRO FATAL: formId não encontrado nem no elemento nem no localStorage.');
-          return; // Não pode navegar sem formId
-       }
+  // --- ADICIONAR handleCheckout ---
+  const handleCheckout = async () => {
+    if (!stripe) {
+      console.error('[handleCheckout] Stripe não carregado.');
+      toast.error(language === 'en' ? 'Payment system not ready. Please wait.' : 'Sistema de pagamento não está pronto. Aguarde.');
+      return;
     }
-    
-    // NÃO persistir IDs aqui, pois a SuccessPage não será mais usada neste fluxo
-    // localStorage.setItem('current_payment_id', paymentId);
-    // localStorage.setItem('form_id', formIdFromElement);
-    
-    // NAVEGAR PARA A PÁGINA DE COLETA DE DADOS
-    const targetUrl = `/coleta-dados?formId=${formIdFromElement}`;
-    console.log(`>>> CartCheckout - handleStripeSuccess: Preparando para NAVEGAR para ${targetUrl}`);
-    navigate(targetUrl);
-    console.log(`>>> CartCheckout - handleStripeSuccess: NAVEGAÇÃO para ${targetUrl} INICIADA.`);
-    
-    // Chamar o callback onPaymentSuccess passado (se ainda for necessário)
-    // Atualmente ele só loga no ContactForm, pode ser removido futuramente.
-    if(onPaymentSuccess) {
-        onPaymentSuccess(paymentId);
+    if (!currentFormId) {
+      console.error('[handleCheckout] currentFormId é nulo.');
+      toast.error(language === 'en' ? 'Form session error. Please go back and try again.' : 'Erro na sessão do formulário. Volte e tente novamente.');
+      return;
+    }
+
+    setIsLoading(true);
+    console.log('[handleCheckout] Iniciando checkout para:', { plan: selectedPlan, formId: currentFormId });
+
+    try {
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plan: selectedPlan,
+          formId: currentFormId,
+          // Poderia passar amount e currency se a API não calculasse
+          // amount: price.totalPrice,
+          // currency: price.currency,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('[handleCheckout] Erro da API:', errorData);
+        throw new Error(errorData.error?.message || 'Failed to create checkout session');
+      }
+
+      const { sessionId } = await response.json();
+
+      if (!sessionId) {
+         throw new Error('Session ID not received from API');
+      }
+
+      console.log('[handleCheckout] Session ID recebido:', sessionId);
+      console.log('[handleCheckout] Redirecionando para Stripe...');
+
+      // Redirecionar para o checkout da Stripe
+      const { error } = await stripe.redirectToCheckout({ sessionId });
+
+      if (error) {
+        console.error('[handleCheckout] Erro ao redirecionar para Stripe:', error);
+        toast.error(error.message || (language === 'en' ? 'Failed to redirect to payment.' : 'Falha ao redirecionar para pagamento.'));
+      }
+      // Se o redirecionamento for bem-sucedido, o usuário não verá o código abaixo.
+      // Se falhar, o erro será mostrado e o loading resetado.
+
+    } catch (error) {
+      console.error('[handleCheckout] Erro ao criar sessão de checkout:', error);
+      toast.error(error instanceof Error ? error.message : (language === 'en' ? 'An unexpected error occurred.' : 'Ocorreu um erro inesperado.'));
+    } finally {
+      setIsLoading(false); // Reseta o loading em caso de erro antes do redirect
     }
   };
 
-  console.log('>>> CartCheckout - RENDERIZADO com formId:', currentFormId);
   return (
     <div className="w-full max-w-4xl mx-auto">
       {/* Botão Voltar */}
@@ -110,63 +141,55 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
         onClick={onBack}
         variant="ghost"
         className="mb-6 hover:bg-gray-100"
+        disabled={isLoading}
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
         {language === 'en' ? 'Back' : 'Voltar'}
       </Button>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Coluna Esquerda */}
-        <div>
-          <OrderSummary business={formData.business} />
-          <div className="mt-6">
-            <PlanBenefits currentPlan={selectedPlan} />
-          </div>
+      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm max-w-md mx-auto">
+        <h3 className="text-xl font-semibold mb-4 text-center">
+            {language === 'en' ? 'Proceed to Payment' : 'Prosseguir para Pagamento'}
+        </h3>
+
+        <div className="text-center mb-6">
+          <p className="text-gray-600">
+            {language === 'en' ? 'Plan' : 'Plano'}:{' '}
+            <span className="font-medium">
+              {selectedPlan === 'annual' ? (language === 'en' ? 'Annual' : 'Anual') : (language === 'en' ? 'Monthly' : 'Mensal')}
+            </span>
+          </p>
+           <p className="text-lg font-semibold mt-1">
+             {effectivePricingConfig.currencySymbol}
+             {selectedPlan === 'annual'
+               ? effectivePricingConfig.annual.toFixed(2).replace('.', ',')
+               : effectivePricingConfig.monthly.toFixed(2).replace('.', ',')}
+             {selectedPlan === 'annual' ? '' : (language === 'en' ? '/month' : '/mês')}
+           </p>
+           {selectedPlan === 'annual' && (
+              <p className="text-sm text-gray-500">
+                ({effectivePricingConfig.currencySymbol}{effectivePricingConfig.monthlyInAnnual.toFixed(2).replace('.', ',')}/{language === 'en' ? 'month' : 'mês'})
+              </p>
+           )}
         </div>
 
-        {/* Coluna Direita */}
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-          <h3 className="text-xl font-semibold mb-4">
-            {language === 'en' ? 'Payment Details' : 'Detalhes do Pagamento'}
-          </h3>
-
-          <div className="mt-6">
-            <PriceDisplay
-              selectedPlan={selectedPlan}
-              pricingConfig={effectivePricingConfig}
-            />
-          </div>
-
-          {/* --- Seção de Pagamento Stripe --- */}
-          <div className="mt-8 space-y-4">
-             <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <h4 className="text-lg font-medium mb-4">
-                  {language === 'en' ? 'Pay with Card' : 'Pagar com Cartão'}
-                </h4>
-
-                {/* Stripe Payment Element (Renderizado Diretamente) */}
-                {!clientSecret ? (
-                  <div className="flex flex-col items-center justify-center p-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
-                    <p className="text-sm text-gray-600">
-                      {language === 'en' ? 'Initializing payment system...' : 'Inicializando sistema de pagamento...'}
-                    </p>
-                  </div>
-                ) : (
-                  <StripePaymentElement
-                    formData={formData}
-                    onSuccess={handleStripeSuccess}
-                    formId={currentFormId!}
-                    plan={selectedPlan}
-                    amount={price.totalPrice}
-                    currency={effectivePricingConfig.currency}
-                    clientSecret={clientSecret}
-                  />
-                )}
-             </div>
-             {/* --- Fim Seção de Pagamento Stripe --- */}
-          </div>
-        </div>
+        {/* Botão de Checkout */}
+        <Button
+            onClick={handleCheckout}
+            disabled={isLoading || !stripe}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            size="lg"
+          >
+            {isLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
+            {isLoading
+              ? (language === 'en' ? 'Redirecting...' : 'Redirecionando...')
+              : (language === 'en' ? 'Pay Securely with Stripe' : 'Pagar com Segurança via Stripe')}
+         </Button>
+         <p className="text-xs text-gray-500 mt-2 text-center">
+            {language === 'en' ? 'You will be redirected to Stripe\'s secure platform.' : 'Você será redirecionado para a plataforma segura da Stripe.'}
+         </p>
       </div>
     </div>
   );
