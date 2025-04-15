@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PlanBenefitsProps {
-  currentPlan: "monthly" | "annual";
+  currentPlan: "monthly" | "annual" | "promotion" | "promotion_usd" | "test" | string;
 }
 
 const PlanBenefits: React.FC<PlanBenefitsProps> = ({ currentPlan }) => {

@@ -27,35 +27,20 @@ const ContactForm: React.FC<ContactFormProps> = ({
   
   const {
     formData,
-    files,
-    colorPalette,
-    isSubmitting,
+    isCreatingIntent,
     step,
     totalSteps,
-    finalContent,
     handleChange,
-    handleColorChange,
-    handleFileChange,
     nextStep,
     prevStep,
     resetForm,
-    setFiles,
-    addColor,
-    removeColor,
-    setFinalContent,
-    showSuccessMessage,
-    submitForm,
-    setShowSuccessMessage,
-    formId,
     clientSecret,
-    currentFormId
-  } = useContactForm(onSuccess, initialPlan, pricingConfig);
+    currentFormId,
+    apiError
+  } = useContactForm(onSuccess, initialPlan, pricingConfig) as any;
 
-  const { paymentCompleted, handlePaymentSuccess, resetPaymentFlag } = usePaymentTracking();
-  const { isStripePayment, useStripeRedirect } = useFormInitialization(formId);
-  
   // Reset payment flag when step changes
-  resetPaymentFlag(step);
+  // resetPaymentFlag(step);
 
   // Handle form submission
   const handleFormSubmitWithTracking = async (e: React.FormEvent) => {
@@ -141,12 +126,12 @@ const ContactForm: React.FC<ContactFormProps> = ({
 
   };
   
-  // Handle local payment success
+  // Handle local payment success - Ação a ser definida
   const onPaymentSuccess = (paymentId: string) => {
-    handlePaymentSuccess(paymentId, onSuccess, formData.business);
+    console.warn(`ContactForm: onPaymentSuccess chamado com paymentId=${paymentId}. Ação precisa ser definida ou removida.`);
   };
   
-  // Handle back from payment step
+  // Handle back from payment step (Step 2 -> Step 1)
   const handlePaymentBack = (e: React.MouseEvent) => {
     e.preventDefault();
     prevStep(e);
@@ -158,45 +143,43 @@ const ContactForm: React.FC<ContactFormProps> = ({
       totalSteps={totalSteps} 
       onSubmit={handleFormSubmitWithTracking}
     >
-      {/* Show success message ONLY when returning from Stripe */}
-      {(showSuccessMessage && paymentCompleted) ? (
+      {/* Remover a lógica de showSuccessMessage / paymentCompleted por enquanto */}
+      {/* {(showSuccessMessage && paymentCompleted) ? (
         <PaymentSuccessView businessName={formData.business} />
-      ) : (
+      ) : ( */}
         <>
           {/* Form Content */}
           <FormContentContainer
             step={step}
             formData={formData}
-            files={files}
-            colorPalette={colorPalette}
-            finalContent={finalContent}
+            files={undefined}
+            colorPalette={undefined}
+            finalContent={undefined}
             handleChange={handleChange}
-            handleColorChange={handleColorChange}
-            handleFileChange={handleFileChange}
-            setFiles={setFiles}
-            addColor={addColor}
-            removeColor={removeColor}
+            handleColorChange={undefined}
+            handleFileChange={undefined}
+            setFiles={undefined}
+            addColor={undefined}
+            removeColor={undefined}
             handlePaymentSuccess={onPaymentSuccess}
             handlePaymentBack={handlePaymentBack}
             pricingConfig={pricingConfig}
-            isStripePayment={isStripePayment}
-            useStripeRedirect={useStripeRedirect}
             clientSecret={clientSecret}
             currentFormId={currentFormId}
           />
           
-          {/* Navigation */}
-          {step !== 4 && (
+          {/* Navigation - Mostrar APENAS no passo 1 */}
+          {step === 1 && (
             <FormNav 
               step={step}
               totalSteps={totalSteps}
-              isSubmitting={isSubmitting}
+              isSubmitting={isCreatingIntent}
               prevStep={prevStep}
               nextStep={nextStep}
             />
           )}
         </>
-      )}
+      {/* )} */}
     </FormWrapper>
   );
 };

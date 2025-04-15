@@ -1,79 +1,85 @@
 import { useState, useCallback, useEffect } from "react";
 import { useFormData } from "./useFormData";
 import { useFormNavigation } from "./useFormNavigation";
-import { useContentGeneration } from "./useContentGeneration"; // Mantido caso precise dos dados
-import { useFormSubmission } from "./useFormSubmission";
+// import { useContentGeneration } from "./useContentGeneration"; // Remover - não usado neste fluxo
+// import { useFormSubmission } from "./useFormSubmission"; // Remover - submissão será diferente
 import { PricingConfiguration } from "@/lib/config/pricing";
-import { toast } from "sonner"; // Import toast for validation messages
-import { useLanguage } from "@/contexts/LanguageContext"; // Import useLanguage
-import { validateName, validateEmail, validatePhone } from '../utils/inputValidation'; // Import validation functions
+import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { validateName, validateEmail, validatePhone } from '../utils/inputValidation';
+
+// Define o tipo de dados para o formulário inicial simplificado
+interface InitialFormData {
+  name: string;
+  email: string;
+  phone: string;
+  selectedPlan: 'monthly' | 'annual' | 'promotion' | 'promotion_usd' | 'test'; // Manter plano para cálculo
+  // Remover outros campos: business, businessDetails
+}
 
 export const useContactForm = (
-  onSuccess?: (businessName: string) => void,
-  initialPlan: "monthly" | "annual" = "annual",
+  onSuccess?: (businessName: string) => void, // Manter para callback final, se aplicável
+  initialPlan: 'monthly' | 'annual' | 'promotion' | 'promotion_usd' | 'test' = "annual",
   pricingConfig?: PricingConfiguration
 ) => {
+  // Adaptar useFormData para o formulário simplificado (pode precisar de ajustes internos se não for flexível)
+  // Supõe que useFormData pode lidar com menos campos ou que ajustaremos lá depois.
   const {
     formData,
-    files,
-    colorPalette,
+    // Remover files, colorPalette e suas funções associadas
+    // files,
+    // colorPalette,
     handleChange,
-    handleColorChange,
-    handleFileChange,
-    handlePlanChange,
-    setInitialPlan,
-    addColor,
-    removeColor,
-    setFiles,
+    // handleColorChange,
+    // handleFileChange,
+    // addColor,
+    // removeColor,
+    // setFiles,
     resetFormData
   } = useFormData(initialPlan, pricingConfig);
 
+  // Usar apenas 2 passos
   const {
     step,
-    totalSteps,
-    // navIsSubmitting, // Redundant now
-    // setNavIsSubmitting, // Redundant now
+    totalSteps: originalTotalSteps, // Renomear para evitar conflito
     goToNextStep,
     goToPrevStep,
     setStep
   } = useFormNavigation();
 
-  const {
-    generatedCopy, // Mantido
-    finalContent, // Mantido para passar adiante
-    setFinalContent, // Mantido
-    resetGeneratedContent, // Mantido
-    submitForm, // Mantido, mas não será chamado ao sair do Step 3
-    formId, // Mantido
-    isSubmitting, // Mantido
-    setShowSuccessMessage, // Mantido
-    showSuccessMessage // Mantido
-  } = useFormSubmission();
+  // Remover useFormSubmission e seus estados relacionados
+  // const { ... } = useFormSubmission();
 
-  const { language } = useLanguage(); // Get language context
+  const { language } = useLanguage();
   
-  // >>> NOVO ESTADO para clientSecret e formId da API <<<
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [currentFormId, setCurrentFormId] = useState<string | null>(null);
-  const [isCreatingIntent, setIsCreatingIntent] = useState(false); // Estado de loading para a API
-  const [apiError, setApiError] = useState<string | null>(null); // <<< NOVO ESTADO para erro da API >>>
+  const [isCreatingIntent, setIsCreatingIntent] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  // >>> NOVA FUNÇÃO para chamar a API create-payment-intent <<<
+  // Função para criar Payment Intent (simplificada)
   const handleCreatePaymentIntent = useCallback(async () => {
-    console.log('[useContactForm] Tentando criar Payment Intent...');
+    console.log('[useContactForm] Tentando criar Payment Intent (simplificado)...');
     setIsCreatingIntent(true);
-    setApiError(null); // <<< Usar setApiError >>> // Limpar erros anteriores
+    setApiError(null);
 
-    // Garantir que temos dados essenciais (pode adicionar mais validações se necessário)
-    if (!formData.name || !formData.email || !formData.phone || !formData.business || !formData.businessDetails || !formData.selectedPlan) {
-        toast.error(language === 'en' ? "Incomplete form data. Cannot create payment intent." : "Dados do formulário incompletos. Não é possível criar a intenção de pagamento.");
+    // Validar apenas os campos iniciais
+    if (!validateName(formData.name) || !validateEmail(formData.email) || !validatePhone(formData.phone) || !formData.selectedPlan) {
+        toast.error(language === 'en' ? "Please fill in your name, email, and phone correctly." : "Por favor, preencha seu nome, email e telefone corretamente.");
         setIsCreatingIntent(false);
         return false;
     }
 
+    // Enviar apenas os dados necessários para a API
     const requestBody = {
         plan: formData.selectedPlan,
-        formData: formData, // Enviar todos os dados do formulário
+        // Passar apenas os campos iniciais para formData
+        formData: {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            // Não incluir business, businessDetails aqui
+        },
     };
 
     try {
@@ -86,6 +92,7 @@ export const useContactForm = (
         });
 
         if (!response.ok) {
+            // ... (tratamento de erro da API permanece o mesmo)
             let errorText = 'Failed to create payment intent';
             try {
                 const errorData = await response.json(); 
@@ -114,7 +121,7 @@ export const useContactForm = (
 
     } catch (err: any) {
         console.error('[useContactForm] Erro ao criar payment intent:', err);
-        setApiError(err.message || 'Failed to create payment intent'); // <<< Usar setApiError >>>
+        setApiError(err.message || 'Failed to create payment intent');
         toast.error(
             (language === 'en' ? 'Failed to initialize payment: ' : 'Falha ao inicializar pagamento: ') + 
             (err.message || (language === 'en' ? 'Please try again.' : 'Por favor, tente novamente.'))
@@ -122,130 +129,98 @@ export const useContactForm = (
         setIsCreatingIntent(false);
         return false; // Falha
     } finally {
-      // Certifique-se que o loading é desativado em caso de erro inesperado não pego no catch
-      // Embora o catch deva pegar a maioria dos casos.
-      if (isCreatingIntent) {
+      if (isCreatingIntent) { // Garantir que o loading pare
            setIsCreatingIntent(false);
       }
     }
-}, [formData, language, setClientSecret, setCurrentFormId]); // Dependências necessárias
+  // Atualizar dependências se necessário (formData simplificado)
+}, [formData.name, formData.email, formData.phone, formData.selectedPlan, language, setClientSecret, setCurrentFormId]);
 
-  // >>> NOVO useEffect para avançar o passo APÓS receber clientSecret <<<
+  // useEffect para avançar para o passo 2 (Pagamento) após criar intent
   useEffect(() => {
     console.log(`[useContactForm useEffect] Verificando condições para avançar. Step: ${step}, ClientSecret: ${!!clientSecret}, CurrentFormId: ${!!currentFormId}`);
-    // Avança para o passo 4 SOMENTE SE:
-    // 1. Temos um clientSecret
-    // 2. Temos um currentFormId
-    // 3. AINDA estamos no passo 3 (para evitar avançar se o usuário voltar)
-    if (clientSecret && currentFormId && step === 3) {
-      console.log('[useContactForm useEffect] Condições atendidas! Chamando goToNextStep() para ir para a Etapa 4.');
+    // Avança para o passo 2 SOMENTE SE:
+    // 1. Temos clientSecret e currentFormId
+    // 2. AINDA estamos no passo 1
+    if (clientSecret && currentFormId && step === 1) { // <<< MUDAR step para 1 >>>
+      console.log('[useContactForm useEffect] Condições atendidas! Chamando goToNextStep() para ir para a Etapa 2 (Pagamento).');
       goToNextStep();
     }
-  }, [clientSecret, currentFormId, step, goToNextStep]); // Dependências corretas
+  }, [clientSecret, currentFormId, step, goToNextStep]);
 
-  // Function to move to next step - CORRECTED LOGIC
-  const nextStep = async (e: React.MouseEvent) => { // <<< Tornar async >>>
+  // Função nextStep simplificada
+  const nextStep = async (e: React.MouseEvent) => {
     console.log('>>> useContactForm - nextStep INICIADO para step:', step);
     e.preventDefault();
 
-    // --- VALIDATION BEFORE ADVANCING ---
-    if (step === 1) {
-        if (!validateName(formData.name) || !validateEmail(formData.email) || !validatePhone(formData.phone)) {
-            toast.error(language === 'en' ? "Please fill in all required fields correctly." : "Por favor, preencha todos os campos obrigatórios corretamente.");
-            return false; // Stop advancement
-        }
-    }
-    if (step === 2) {
-        if (!formData.business || !formData.businessDetails || formData.businessDetails.length < 20) {
-            toast.error(language === 'en' ? "Please provide complete business details." : "Por favor, forneça detalhes completos sobre seu negócio.");
-            return false; // Stop advancement
-        }
-    }
-    // Add validation for step 3 if needed (e.g., require logo or colors)
+    if (step === 1) { // Saindo do passo 1 (Informações)
+      if (isCreatingIntent) return false;
 
-    // --- ADVANCE STEP ---
-    if (step === 3) { // <<< LÓGICA ESPECIAL PARA SAIR DO PASSO 3 >>>
-        console.log('Tentando avançar do passo 3 para o 4...');
-        if (isCreatingIntent) return false; // Não permite cliques múltiplos enquanto cria
-        
-        const intentCreated = await handleCreatePaymentIntent(); // Tenta criar a intenção
-        
-        if (intentCreated) {
-            console.log('Intenção de pagamento criada, aguardando useEffect para avançar.'); // <<< MENSAGEM ATUALIZADA >>>
-            // NÃO avançar aqui! O useEffect cuidará disso.
-            return true;
-        } else {
-            console.log('Falha ao criar intenção de pagamento. Não avançando.');
-            return false; // Permanece no passo 3 se falhar
-        }
+      // Validação já ocorre dentro de handleCreatePaymentIntent
+      const intentCreated = await handleCreatePaymentIntent();
+
+      if (intentCreated) {
+        console.log('Intenção de pagamento criada, aguardando useEffect para avançar para Etapa 2.');
+        // Não avançar aqui, o useEffect cuida disso
+        return true;
+      } else {
+        console.log('Falha ao criar intenção de pagamento. Não avançando.');
+        return false;
+      }
     }
-     // <<< LÓGICA NORMAL PARA OUTROS PASSOS >>>
-    else if (step < totalSteps) {
-      console.log(`useContactForm: Avançando do passo ${step} para ${step + 1}`);
-      goToNextStep();
-      return true;
+    // Não há mais passos para avançar a partir daqui neste formulário inicial
+    else {
+        console.log(`useContactForm: Tentativa de avançar do passo ${step}, mas já estamos no último passo ou em estado inesperado.`);
+        return false;
     }
-    
-    // Se já está no último passo ou outra condição não tratada
-    console.log(`useContactForm: Já está no último passo (${step}) ou condição não prevista.`);
-    return false;
   };
 
-  // Function to move to previous step (remains the same)
+  // Função prevStep simplificada (só pode voltar do passo 2 para 1)
   const prevStep = (e: React.MouseEvent) => {
     e.preventDefault();
-    return goToPrevStep();
+    if (step === 2) {
+        // Opcional: limpar clientSecret/formId ao voltar?
+        // setClientSecret(null);
+        // setCurrentFormId(null);
+        return goToPrevStep();
+    }
+    return false; // Não pode voltar do passo 1
   };
 
-  // Function to handle FINAL form submission (e.g., if needed AFTER payment)
-  // This function is NOT called when moving from step 3 to 4 anymore.
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("useContactForm: handleSubmit - Esta função não deveria ser chamada no fluxo atual antes do pagamento.");
-    // Potentially call submitForm here AFTER successful payment if needed,
-    // but currently the webhook handles the final database update.
-  };
+  // Remover handleSubmit, pois não há submissão final aqui
+  // const handleSubmit = ...
 
-  // Function to reset the form
+  // Função reset simplificada
   const resetForm = () => {
     resetFormData();
-    resetGeneratedContent();
-    setStep(1);
+    setClientSecret(null); // Limpar estado do pagamento
+    setCurrentFormId(null);
+    setApiError(null);
+    setStep(1); // Voltar para o passo inicial
   };
 
-  // Function to set initial step (remains the same)
-  const setInitialStep = (newStep: number) => {
-    setStep(newStep);
-  };
-
+  // Retornar apenas o necessário para as duas etapas
   return {
-    formData,
-    files,
-    colorPalette,
-    isSubmitting, // Still reflects submission state if used elsewhere
+    formData: { // Retornar apenas os campos relevantes
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        selectedPlan: formData.selectedPlan,
+    },
+    // Remover files, colorPalette, etc.
+    isSubmitting: isCreatingIntent, // Usar isCreatingIntent como indicador de submissão/loading
     step,
-    totalSteps,
-    generatedCopy, // Pass through
-    finalContent, // Pass through
-    formId, // Pass through (ID original, talvez não seja mais necessário passar)
-    clientSecret, // <<< Passar o clientSecret para o componente >>>
-    currentFormId, // <<< Passar o formId retornado pela API >>>
-    isCreatingIntent, // <<< Passar estado de loading da API >>>
-    apiError, // <<< Passar estado de erro da API >>>
+    clientSecret,
+    currentFormId,
+    isCreatingIntent,
+    apiError,
     handleChange,
-    handleColorChange,
-    handleFileChange,
-    nextStep, // Use the corrected nextStep
+    // Remover handleColorChange, handleFileChange, addColor, removeColor, setFiles, setFinalContent
+    nextStep,
     prevStep,
-    handleSubmit, // Keep for potential future use
     resetForm,
-    setFiles,
-    addColor,
-    removeColor,
-    setFinalContent, // Pass through
-    setInitialStep,
-    showSuccessMessage,
-    setShowSuccessMessage
-    // isAiEditing and editContent are removed as content generation was disabled
+    // Remover setShowSuccessMessage, showSuccessMessage
+    // Remover setInitialStep se não for mais usado
+    totalSteps: 2 // <<< CORREÇÃO: Sobrescrever totalSteps aqui >>>
   };
 };

@@ -13,6 +13,7 @@ import TestePayment from "./pages/TestePayment";
 import PaymentTest from "./pages/PaymentTest";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { supabase } from "./lib/supabase/client";
+import ColetaDadosPage from "./pages/ColetaDadosPage";
 
 // Configuração de debug para React Router
 console.log('Inicializando React Router - App.tsx');
@@ -90,11 +91,12 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter basename="/">
-          <PaymentSuccessHandler />
+          {/* <PaymentSuccessHandler /> */}
           <Routes>
             {/* Rota de sucesso com maior prioridade */}
             <Route path="/success" element={<SuccessPage />} />
             <Route path="/payment-success" element={<SuccessPage />} />
+            <Route path="/coleta-dados" element={<ColetaDadosPage />} />
             
             {/* Outras rotas */}
             <Route path="/" element={<Index />} />

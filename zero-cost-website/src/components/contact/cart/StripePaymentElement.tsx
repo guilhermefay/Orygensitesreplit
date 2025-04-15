@@ -223,9 +223,6 @@ interface StripePaymentElementProps {
   formData: ContactFormData;
   onSuccess: (paymentId: string, formId: string) => void;
   formId: string;
-  files: FileData;
-  colorPalette: string[];
-  finalContent: string;
   plan: string;
   clientSecret: string | null;
 }
@@ -237,9 +234,6 @@ const StripePaymentElement: React.FC<StripePaymentElementProps> = ({
   formData,
   onSuccess,
   formId,
-  files,
-  colorPalette,
-  finalContent,
   plan,
   clientSecret
 }) => {
