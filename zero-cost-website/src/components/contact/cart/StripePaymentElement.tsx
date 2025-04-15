@@ -103,6 +103,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
       if (paymentIntent) {
         console.log('Status final do PaymentIntent:', paymentIntent.status);
         if (paymentIntent.status === 'succeeded') {
+          console.log(`>>> StripePaymentForm - SUCESSO! Preparando para chamar onSuccess. formId: ${formId}, paymentId: ${paymentIntent.id}`);
           toast.success('Pagamento realizado com sucesso!');
           confetti({
             particleCount: 150, // Mais confete!
@@ -118,8 +119,9 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
           localStorage.setItem('current_payment_id', paymentIntent.id);
           // Chamar o callback de sucesso para navegar
           const finalFormId = formId || localStorage.getItem('form_id') || '';
-          console.log(`>>> StripePaymentForm - CHAMANDO onSuccess com paymentId: ${paymentIntent.id}, formId: ${finalFormId}`);
+          console.log(`>>> StripePaymentForm - CHAMANDO onSuccess AGORA com paymentId: ${paymentIntent.id}, formId: ${finalFormId}`);
           onSuccess(paymentIntent.id, finalFormId);
+          console.log(`>>> StripePaymentForm - onSuccess CHAMADO.`);
         } else if (paymentIntent.status === 'processing') {
           setErrorMessage('O pagamento está sendo processado. Aguarde a confirmação.');
           toast.info('Pagamento em processamento.');

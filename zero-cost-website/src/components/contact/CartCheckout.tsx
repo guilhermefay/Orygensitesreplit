@@ -77,11 +77,33 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
   console.log("CartCheckout - Form ID:", currentFormId);
   console.log("CartCheckout - Plano Selecionado:", selectedPlan);
 
-  // Callback for StripePaymentElement success
-  const handleStripeSuccess = (paymentIntentId: string, formIdFromElement: string) => {
-    console.log(`CartCheckout: Pagamento Stripe bem-sucedido (PI: ${paymentIntentId}, Form: ${formIdFromElement}). Navegando...`);
-    // Navigate to success page, passing the definitive formId received from the element
+  // Função de callback para sucesso do Stripe
+  const handleStripeSuccess = (paymentId: string, formIdFromElement: string) => {
+    // LOG ADICIONADO: Início do handleStripeSuccess
+    console.log(`>>> CartCheckout - handleStripeSuccess INICIADO. paymentId: ${paymentId}, formId: ${formIdFromElement}`);
+    if (!formIdFromElement) {
+       console.error('>>> CartCheckout - handleStripeSuccess ERRO: formId recebido do elemento está vazio ou nulo!');
+       toast.error('Erro ao processar ID do formulário após pagamento. Contate o suporte.');
+       // Talvez tentar recuperar do localStorage como último recurso?
+       const storedId = localStorage.getItem('form_id');
+       if(storedId) {
+           console.log('>>> CartCheckout - handleStripeSuccess: Usando formId recuperado do localStorage:', storedId);
+           formIdFromElement = storedId;
+       } else {
+          console.error('>>> CartCheckout - handleStripeSuccess ERRO FATAL: formId não encontrado nem no elemento nem no localStorage.');
+          return; // Não pode navegar sem formId
+       }
+    }
+    
+    // Persistir os IDs no localStorage para garantir que a SuccessPage possa usá-los
+    localStorage.setItem('current_payment_id', paymentId);
+    localStorage.setItem('form_id', formIdFromElement);
+    
+    // LOG ADICIONADO: Antes de chamar navigate
+    console.log(`>>> CartCheckout - handleStripeSuccess: Preparando para NAVEGAR para /success?formId=${formIdFromElement}`);
     navigate(`/success?formId=${formIdFromElement}`);
+    // LOG ADICIONADO: Após chamar navigate
+    console.log(`>>> CartCheckout - handleStripeSuccess: NAVEGAÇÃO para /success INICIADA.`);
   };
 
   // Handler for the Test Button
