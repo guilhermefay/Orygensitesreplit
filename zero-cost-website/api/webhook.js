@@ -41,41 +41,39 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 // Chave secreta para webhook
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+// Exportar uma função async para poder usar await buffer(req)
 module.exports = async (req, res) => {
   // Apenas aceitar POST para webhooks
   if (req.method !== 'POST') {
+    // Retornar Allow header para OPTIONS ou outros métodos
+    res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
+  // Obter o corpo bruto da requisição
+  const buf = await buffer(req);
+  const signature = req.headers['stripe-signature'];
   let event;
   
   try {
     // Verificar assinatura se temos uma chave secreta
     if (endpointSecret) {
-      // Dado que req.body já está processado como JSON no Express,
-      // precisamos obter os dados brutos para verificar assinatura
-      // Este trecho assume que rawBody foi capturado antes da análise JSON
-      const signature = req.headers['stripe-signature'];
-      
       try {
-        if (!req.rawBody) {
-          // Se não temos rawBody, podemos estar usando o middleware normal do Express
-          // e precisamos obter os dados brutos de outra forma
-          // Nota: Isso precisa ser configurado no Express antes de análise de JSON
-          return res.status(400).json({ error: 'Webhook requires raw body. Please use the appropriate middleware.' });
-        }
-        
-        event = stripe.webhooks.constructEvent(req.rawBody, signature, endpointSecret);
+        // Usar o buffer obtido com a biblioteca micro
+        event = stripe.webhooks.constructEvent(buf, signature, endpointSecret);
       } catch (err) {
         console.error(`[WEBHOOK] Erro na assinatura: ${err.message}`);
+        // Retornar 400 se a assinatura for inválida
         return res.status(400).json({ error: `Webhook Error: ${err.message}` });
       }
     } else {
       // Para ambiente de desenvolvimento sem assinatura verificada
-      event = req.body;
+      // Parsear o buffer como JSON
+      console.warn('[WEBHOOK] Verificação de assinatura desabilitada (sem endpointSecret).');
+      event = JSON.parse(buf.toString('utf8'));
     }
     
-    console.log(`[WEBHOOK] Evento recebido: ${event.type}`);
+    console.log(`[WEBHOOK] Evento recebido e verificado: ${event.type}`);
     
     // Tratar eventos específicos
     switch (event.type) {
@@ -173,14 +171,16 @@ module.exports = async (req, res) => {
         
       // Adicionar mais casos conforme necessário
       default:
+        // Apenas logar o evento não tratado
         console.log(`[WEBHOOK] Evento não tratado: ${event.type}`);
-    }
+    } // Fim do switch
     
-    // Retornar uma resposta para confirmar recebimento
-    return res.status(200).json({ received: true });
+    // Retornar uma resposta 200 para Stripe confirmar recebimento
+    res.status(200).json({ received: true });
     
   } catch (err) {
-    console.error(`[WEBHOOK] Erro: ${err.message}`);
-    return res.status(500).json({ error: `Webhook Error: ${err.message}` });
+    // Captura erros gerais (ex: falha ao parsear JSON se a assinatura for pulada)
+    console.error(`[WEBHOOK] Erro inesperado no processamento: ${err.message}`);
+    res.status(500).json({ error: `Webhook Processing Error: ${err.message}` });
   }
-};
+}; // Fim da função exportada
