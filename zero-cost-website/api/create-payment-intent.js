@@ -97,13 +97,15 @@ module.exports = async (req, res) => {
 
     console.log(`[PAYMENT INTENT] Calculado: ${amount} ${currency.toUpperCase()} para plano ${plan}`);
 
-    // 2. Criar PaymentIntent no Stripe
-    console.log('[PAYMENT INTENT] Criando Payment Intent no Stripe...');
+    // Gere o formId ANTES de criar o PaymentIntent
+    const formId = uuidv4();
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
       currency: currency,
       payment_method_types: ['card'],
       metadata: {
+        formId: formId, // Adicione o formId nos metadados
         plan: plan,
         business_name: formData.business,
       },
@@ -114,9 +116,6 @@ module.exports = async (req, res) => {
 
     // Só salvar no Supabase se o pagamento for aprovado
     if (paymentIntent.status === 'succeeded') {
-      const formId = uuidv4(); // Usar pacote uuid
-      console.log('[PAYMENT INTENT] ID gerado:', formId);
-
       const supabaseData = {
         id: formId,
         name: formData.name,
@@ -151,7 +150,7 @@ module.exports = async (req, res) => {
     res.status(200).json({
       success: true,
       clientSecret: paymentIntent.client_secret,
-      formId: paymentIntent.metadata.formId || null,
+      formId: formId, // Retorne o mesmo formId gerado
       amount: amount
     });
 
