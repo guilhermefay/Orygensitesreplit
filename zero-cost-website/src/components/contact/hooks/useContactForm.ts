@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, memo } from "react";
 import { useFormData } from "./useFormData";
 import { useFormNavigation } from "./useFormNavigation";
 // import { useContentGeneration } from "./useContentGeneration"; // Remover - não usado neste fluxo
@@ -56,6 +56,7 @@ export const useContactForm = (
   const [currentFormId, setCurrentFormId] = useState<string | null>(null);
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
 
   // Função para criar Payment Intent (simplificada)
   const handleCreatePaymentIntent = useCallback(async () => {
@@ -194,10 +195,11 @@ export const useContactForm = (
   // Função reset simplificada
   const resetForm = () => {
     resetFormData();
-    setClientSecret(null); // Limpar estado do pagamento
+    setClientSecret(null);
     setCurrentFormId(null);
     setApiError(null);
-    setStep(1); // Voltar para o passo inicial
+    setPaymentCompleted(false);
+    setStep(1);
   };
 
   // Retornar apenas o necessário para as duas etapas
@@ -222,6 +224,8 @@ export const useContactForm = (
     resetForm,
     // Remover setShowSuccessMessage, showSuccessMessage
     // Remover setInitialStep se não for mais usado
-    totalSteps: 2 // <<< CORREÇÃO: Sobrescrever totalSteps aqui >>>
+    totalSteps: 2,
+    paymentCompleted,
+    setPaymentCompleted
   };
 };

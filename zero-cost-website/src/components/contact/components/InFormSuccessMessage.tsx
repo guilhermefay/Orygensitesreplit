@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import Confetti from 'react-confetti';
 import { SparklesCore } from '@/components/ui/sparkles';
@@ -91,6 +90,18 @@ const InFormSuccessMessage: React.FC<InFormSuccessMessageProps> = ({
             Obrigado por escolher nossos serviços para {businessName}.
           </p>
         )}
+        
+        <div className="mt-6">
+          <button
+            onClick={() => { 
+              console.log('Redirecionando para forms.app...');
+              window.location.href = 'https://o7pxcg48.forms.app/orygen';
+            }}
+            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+          >
+            Preencher informações e solicitar site
+          </button>
+        </div>
       </div>
     </div>
   );

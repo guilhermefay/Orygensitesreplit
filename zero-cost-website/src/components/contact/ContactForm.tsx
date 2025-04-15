@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import PaymentSuccessView from "./components/PaymentSuccessView";
 import { usePaymentTracking } from "./hooks/usePaymentTracking";
 import { useFormInitialization } from "./hooks/useFormInitialization";
-import { useNavigate } from 'react-router-dom';
 
 interface ContactFormProps {
   initialPlan?: "monthly" | "annual";
@@ -25,8 +24,6 @@ const ContactForm: React.FC<ContactFormProps> = ({
   const isMobile = useIsMobile();
   const { language } = useLanguage();
   
-  const navigate = useNavigate();
-
   const {
     formData,
     isCreatingIntent,
@@ -38,54 +35,50 @@ const ContactForm: React.FC<ContactFormProps> = ({
     resetForm,
     clientSecret,
     currentFormId,
-    apiError
+    apiError,
+    paymentCompleted,
+    setPaymentCompleted
   } = useContactForm(onSuccess, initialPlan, pricingConfig) as any;
 
-  // Handle local payment success - IMPLEMENTAR NAVEGAÇÃO
-  const onPaymentSuccess = (paymentId: string) => {
+  const handleLocalPaymentSuccess = (paymentId: string) => {
     console.log(`ContactForm: Pagamento bem-sucedido! Payment ID: ${paymentId}, Form ID: ${currentFormId}`);
-    if (currentFormId) {
-       console.log(`Navegando para /coleta-dados?formId=${currentFormId}`);
-       navigate(`/coleta-dados?formId=${currentFormId}`); // Navegar para a página de coleta de dados
-    } else {
-       console.error("Erro: currentFormId não está disponível após pagamento bem-sucedido.");
-       toast.error("Erro ao processar pagamento. ID do formulário não encontrado.");
-       navigate('/'); // Fallback para home em caso de erro grave
+    setPaymentCompleted(true);
+    if (onSuccess && formData.business) {
+      onSuccess(formData.business);
     }
   };
   
-  // Handle back from payment step (Step 2 -> Step 1)
   const handlePaymentBack = (e: React.MouseEvent) => {
     e.preventDefault();
     prevStep(e);
   };
 
-  // Defina o layout geral como um div simples ou React.Fragment
   return (
     <div className={`w-full ${isMobile ? 'max-w-full px-1' : 'max-w-4xl'} mx-auto`}>
-      {/* StepIndicator pode ficar aqui se desejado, ou dentro do FormWrapper se ele fosse mantido */}
-      {/* Exemplo: <StepIndicator currentStep={step} totalSteps={totalSteps} /> */}
+      {paymentCompleted ? (
+        <PaymentSuccessView businessName={formData.business || 'seu negócio'} />
+      ) : (
+        <>
+          <FormContentContainer
+            step={step}
+            formData={formData}
+            handleChange={handleChange}
+            handlePaymentSuccess={handleLocalPaymentSuccess}
+            handlePaymentBack={handlePaymentBack}
+            pricingConfig={pricingConfig}
+            clientSecret={clientSecret}
+            currentFormId={currentFormId}
+          />
 
-      {/* Conteúdo do Formulário */}
-      <FormContentContainer
-        step={step}
-        formData={formData}
-        handleChange={handleChange}
-        handlePaymentSuccess={onPaymentSuccess}
-        handlePaymentBack={handlePaymentBack}
-        pricingConfig={pricingConfig}
-        clientSecret={clientSecret}
-        currentFormId={currentFormId}
-      />
-
-      {/* Navegação (fora do FormContentContainer) */}
-      <FormNav 
-        step={step}
-        totalSteps={totalSteps}
-        isSubmitting={isCreatingIntent} // Ou outra variável de loading apropriada
-        prevStep={prevStep}
-        nextStep={nextStep}
-      />
+          <FormNav 
+            step={step}
+            totalSteps={totalSteps}
+            isSubmitting={isCreatingIntent}
+            prevStep={prevStep}
+            nextStep={nextStep}
+          />
+        </>
+      )}
     </div>
   );
 };
