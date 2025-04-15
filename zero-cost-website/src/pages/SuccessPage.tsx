@@ -31,6 +31,7 @@ const SuccessContent: React.FC = () => {
   const location = useLocation();
   const { language } = useLanguage();
   const [stripe, setStripe] = useState<Stripe | null>(null);
+  const [initialParamsChecked, setInitialParamsChecked] = useState(false);
 
   // Efeito para carregar a instância do Stripe
   useEffect(() => {
@@ -59,17 +60,18 @@ const SuccessContent: React.FC = () => {
   const redirectStatus = queryParams.get('redirect_status');
   const businessParam = queryParams.get('business');
 
-  // Log de todos os parâmetros recebidos
+  // Log inicial dos parâmetros (ocorre uma vez na montagem)
   useEffect(() => {
-    console.log('[SuccessPage] Parâmetros da URL:', {
-      formId,
-      paymentIntentId,
-      clientSecretPresent: !!clientSecret,
-      redirectStatus,
-      businessParam,
-      fullSearch: location.search
+    console.log('[SuccessPage Initial Log] Parâmetros recebidos na URL:', {
+        formId,
+        paymentIntentId,
+        clientSecretPresent: !!clientSecret,
+        redirectStatus,
+        businessParam,
+        fullSearch: location.search
     });
-  }, [location.search, formId, paymentIntentId, clientSecret, redirectStatus, businessParam]);
+    setInitialParamsChecked(true);
+  }, [location.search]);
 
   // Efeito para atualizar o tamanho da janela (para o confetti)
   useEffect(() => {
@@ -78,13 +80,19 @@ const SuccessContent: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Efeito principal para processar o status do pagamento e buscar dados
+  // Efeito principal para processar o status do pagamento
   useEffect(() => {
-    if (!stripe) {
-      console.log('[SuccessPage] Aguardando instância do Stripe...');
+    if (!stripe || !initialParamsChecked) {
+      console.log('[SuccessPage Process] Aguardando Stripe e/ou leitura inicial de parâmetros...', { hasStripe: !!stripe, paramsChecked: initialParamsChecked });
+      if (stripe && !initialParamsChecked) console.warn('[SuccessPage Process] Stripe carregado, mas parâmetros iniciais não foram checados?')
+      if (!isProcessing && !stripe) {
+         setFinalStatusMessage('Erro crítico: Falha ao carregar sistema de pagamento.');
+         setIsProcessing(false);
+      }
       return;
     }
 
+    console.log('[SuccessPage Process] Iniciando processamento do retorno de pagamento...');
     const processPaymentReturn = async () => {
       setIsProcessing(true);
       setFinalStatusMessage(null);
@@ -182,7 +190,7 @@ const SuccessContent: React.FC = () => {
 
     processPaymentReturn();
 
-  }, [stripe, clientSecret, formId, businessParam, language]);
+  }, [stripe, initialParamsChecked, clientSecret, formId, businessParam, language]);
 
   const handleGoHome = () => {
     navigate('/');
