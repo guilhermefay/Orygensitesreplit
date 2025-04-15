@@ -57,10 +57,10 @@ module.exports = async (req, res) => {
 
     console.log('[PAYMENT INTENT] Dados recebidos:', { plan, formDataKeys: Object.keys(formData) });
 
-    // Validação Mínima (Pode ser mais robusta) - Certifique-se que businessDetails está aqui
-    if (!formData.name || !formData.email || !formData.phone || !formData.business || !formData.businessDetails) {
-      console.error('[PAYMENT INTENT] Dados de formulário incompletos:', formData);
-      return res.status(400).json({ error: 'Dados de formulário incompletos' });
+    // Validação Mínima - Apenas dados da primeira etapa
+    if (!formData.name || !formData.email || !formData.phone) {
+      console.error('[PAYMENT INTENT] Dados de formulário iniciais incompletos:', formData);
+      return res.status(400).json({ error: 'Dados de formulário incompletos (nome, email, telefone)' });
     }
 
     // 1. Calcular valor e descrição
