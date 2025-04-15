@@ -35,11 +35,17 @@ module.exports = async (req, res) => {
 
       // Definir descrição e valor com base no plano
       let description = 'Orygen Sites - Plano Mensal';
-      let unitAmount = 4990; // R$ 49,90 em centavos
-      if (plan === 'annual') {
-        description = 'Orygen Sites - Plano Anual';
-        unitAmount = 59880; // R$ 598,80 em centavos (ajuste se necessário)
-      }
+      // let unitAmount = 4990; // R$ 49,90 em centavos
+      // if (plan === 'annual') {
+      //   description = 'Orygen Sites - Plano Anual';
+      //   unitAmount = 59880; // R$ 598,80 em centavos (ajuste se necessário)
+      // }
+      
+      // --- VALOR FIXO PARA TESTE --- 
+      let unitAmount = 100; // R$ 1,00 em centavos - APENAS PARA TESTE
+      description = `TESTE - ${plan === 'annual' ? 'Plano Anual' : 'Plano Mensal'} (R$ 1,00)`;
+      // --- FIM VALOR FIXO --- 
+
       // TODO: Adicionar lógica para buscar o preço do Stripe Product/Price ID se preferir
 
       const baseUrl = getBaseUrl(req);
