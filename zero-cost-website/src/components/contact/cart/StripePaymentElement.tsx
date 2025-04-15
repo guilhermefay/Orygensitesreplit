@@ -71,11 +71,13 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
         redirect: 'if_required', // Mantém 'if_required', mas trataremos o resultado
       });
 
-      // Logar o resultado da confirmação
-      console.log('>>> StripePaymentForm - Resultado confirmPayment:', confirmResult);
+      // LOG ADICIONADO: Resultado IMEDIATO de confirmPayment
+      console.log('>>> StripePaymentForm - Resultado IMEDIATO confirmPayment:', confirmResult);
 
       // 2. Checar erro na confirmação inicial
       if (confirmResult.error) {
+        // LOG ADICIONADO: Erro detectado em confirmPayment
+        console.error('>>> StripePaymentForm - ERRO DETECTADO em confirmPayment:', confirmResult.error);
         console.error('Erro na confirmação do pagamento:', confirmResult.error);
         setErrorMessage(confirmResult.error.message || 'Erro ao confirmar pagamento.');
         toast.error(confirmResult.error.message || 'Erro ao confirmar pagamento.');
@@ -88,10 +90,13 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
       console.log('>>> StripePaymentForm - Buscando status atualizado do PaymentIntent:', clientSecret);
       const { paymentIntent, error: retrieveError } = await stripe.retrievePaymentIntent(clientSecret);
 
-      console.log('>>> StripePaymentForm - Resultado retrievePaymentIntent:', { paymentIntent, retrieveError });
+      // LOG ADICIONADO: Resultado IMEDIATO de retrievePaymentIntent
+      console.log('>>> StripePaymentForm - Resultado IMEDIATO retrievePaymentIntent:', { paymentIntent, retrieveError });
 
       // 4. Checar erro ao buscar o PaymentIntent
       if (retrieveError) {
+        // LOG ADICIONADO: Erro detectado em retrievePaymentIntent
+        console.error('>>> StripePaymentForm - ERRO DETECTADO em retrievePaymentIntent:', retrieveError);
         console.error('Erro ao buscar PaymentIntent:', retrieveError);
         setErrorMessage(retrieveError.message || 'Erro ao verificar status do pagamento.');
         toast.error(retrieveError.message || 'Erro ao verificar status do pagamento.');
@@ -123,15 +128,23 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
           onSuccess(paymentIntent.id, finalFormId);
           console.log(`>>> StripePaymentForm - onSuccess CHAMADO.`);
         } else if (paymentIntent.status === 'processing') {
+          // LOG ADICIONADO: Status 'processing' detectado
+          console.log('>>> StripePaymentForm - STATUS DETECTADO: processing');
           setErrorMessage('O pagamento está sendo processado. Aguarde a confirmação.');
           toast.info('Pagamento em processamento.');
         } else if (paymentIntent.status === 'requires_payment_method') {
+          // LOG ADICIONADO: Status 'requires_payment_method' detectado
+          console.log('>>> StripePaymentForm - STATUS DETECTADO: requires_payment_method');
           setErrorMessage('Falha no pagamento. Verifique os dados do cartão e tente novamente.');
           toast.error('Falha no pagamento. Verifique os dados do cartão.');
         } else if (paymentIntent.status === 'requires_confirmation') {
+          // LOG ADICIONADO: Status 'requires_confirmation' detectado
+          console.log('>>> StripePaymentForm - STATUS DETECTADO: requires_confirmation');
           setErrorMessage('Pagamento requer confirmação adicional.');
           toast.info('Pagamento requer confirmação adicional.');
         } else if (paymentIntent.status === 'requires_action') {
+          // LOG ADICIONADO: Status 'requires_action' detectado
+          console.log('>>> StripePaymentForm - STATUS DETECTADO: requires_action');
           setErrorMessage('Pagamento requer ação adicional (ex: autenticação 3D Secure). Siga as instruções.');
           toast.warning('Pagamento requer ação adicional. Siga as instruções.');
           // Neste caso, o Stripe pode ter redirecionado ou mostrado um modal.
@@ -141,10 +154,14 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
           toast.error(`Status inesperado do pagamento: ${paymentIntent.status}`);
         }
       } else {
+        // LOG ADICIONADO: paymentIntent nulo após retrieve (sem erro explícito)
+        console.warn('>>> StripePaymentForm - ALERTA: paymentIntent veio nulo após retrieve, mesmo sem retrieveError explícito.');
         setErrorMessage('Não foi possível obter o status do pagamento.');
         toast.error('Não foi possível verificar o status do pagamento.');
       }
     } catch (error: any) {
+      // LOG ADICIONADO: Captura de erro geral no try/catch
+      console.error('>>> StripePaymentForm - ERRO GERAL CAPTURADO no try/catch:', error);
       console.error('Error during payment confirmation:', error);
       setErrorMessage(
         error.message || 
