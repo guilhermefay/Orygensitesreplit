@@ -48,6 +48,8 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   const { language } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    // LOG ADICIONADO: Início absoluto do handleSubmit
+    console.log('>>> StripePaymentForm - handleSubmit EXECUTADO (Início da função)');
     console.log('>>> StripePaymentForm - handleSubmit INICIADO');
     e.preventDefault();
 
@@ -58,6 +60,9 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 
     setIsLoading(true);
     setErrorMessage(null);
+
+    // PAUSA PARA DEBUG: Verificar estado antes de chamar Stripe
+    debugger;
 
     try {
       // 1. Confirmar o pagamento SEM redirecionamento automático inicial
