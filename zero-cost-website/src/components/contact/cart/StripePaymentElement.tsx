@@ -92,10 +92,20 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
           spread: 70,
           origin: { y: 0.6 }
         });
-        // Store formId in localStorage for potential page refreshes or redirects
-        localStorage.setItem('payment_id', paymentIntent.id);
-        // Call the success handler with the payment intent ID and formId
-        onSuccess(paymentIntent.id, formId);
+        // Store formId em localStorage para garantir persistência
+        if (formId) {
+          localStorage.setItem('form_id', formId);
+          console.log('[StripePaymentForm] formId salvo no localStorage:', formId);
+        } else {
+          console.warn('[StripePaymentForm] formId não disponível no momento do sucesso! Tentando recuperar do localStorage.');
+        }
+        // Store payment_id também
+        if (paymentIntent.id) {
+          localStorage.setItem('current_payment_id', paymentIntent.id);
+        }
+        // Call the success handler with the payment intent ID and formId (ou do localStorage)
+        const finalFormId = formId || localStorage.getItem('form_id') || '';
+        onSuccess(paymentIntent.id, finalFormId);
       } else {
         console.log('Payment status:', paymentIntent?.status);
         setIsLoading(false);
