@@ -178,20 +178,14 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {isLoading && (
-        <div className="flex flex-col items-center justify-center p-4">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
-          <p className="text-sm text-gray-600">
-            {language === 'en' ? 'Aguarde um momento...' : 'Aguarde um momento...'}
-          </p>
-        </div>
-      )}
-      {!isLoading && <PaymentElement />}
+      <PaymentElement />
+
       {errorMessage && (
         <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
           {errorMessage}
         </div>
       )}
+
       <button
         type="submit"
         disabled={!stripe || isLoading}
