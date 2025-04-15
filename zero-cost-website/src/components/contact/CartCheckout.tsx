@@ -1,4 +1,4 @@
-import React, { useState, Suspense, lazy } from "react";
+import React, { useState } from "react";
 import OrderSummary from "./cart/OrderSummary";
 import PlanBenefits from "./cart/PlanBenefits";
 import PeriodSelector from "./cart/PeriodSelector";
@@ -13,7 +13,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 // Lazy load the StripePaymentElement
-const StripePaymentElement = lazy(() => import('./cart/StripePaymentElement'));
+// const StripePaymentElement = lazy(() => import('./cart/StripePaymentElement'));
+import StripePaymentElement from './cart/StripePaymentElement';
 
 interface CartCheckoutProps {
   formData: ContactFormData;
@@ -223,27 +224,18 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                     </p>
                   </div>
                 ) : (
-                  <Suspense fallback={
-                    <div className="flex flex-col items-center justify-center p-4">
-                      <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
-                      <p className="text-sm text-gray-600">
-                        {language === 'en' ? 'Loading payment form...' : 'Carregando formulário de pagamento...'}
-                      </p>
-                    </div>
-                  }>
-                    <StripePaymentElement
-                      formData={formData}
-                      onSuccess={handleStripeSuccess}
-                      formId={currentFormId}
-                      plan={selectedPlan}
-                      amount={price.totalPrice}
-                      currency={effectivePricingConfig.currency}
-                      files={files}
-                      colorPalette={colorPalette}
-                      finalContent={finalContent}
-                      clientSecret={clientSecret}
-                    />
-                  </Suspense>
+                  <StripePaymentElement
+                    formData={formData}
+                    onSuccess={handleStripeSuccess}
+                    formId={currentFormId}
+                    plan={selectedPlan}
+                    amount={price.totalPrice}
+                    currency={effectivePricingConfig.currency}
+                    files={files}
+                    colorPalette={colorPalette}
+                    finalContent={finalContent}
+                    clientSecret={clientSecret}
+                  />
                 )}
              </div>
              {/* --- Fim Seção de Pagamento Stripe --- */}
