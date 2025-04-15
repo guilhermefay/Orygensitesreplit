@@ -79,41 +79,43 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
             : 'Ocorreu um erro durante o processamento do pagamento.')
         );
         toast.error(error.message || 'Payment failed. Please try again.');
-      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        console.log('Payment succeeded:', paymentIntent);
-        toast.success(
-          language === 'en' 
-            ? 'Payment successful!' 
-            : 'Pagamento realizado com sucesso!'
-        );
-        // Disparar confetes
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-        // Store formId em localStorage para garantir persistência
-        if (formId) {
-          localStorage.setItem('form_id', formId);
-          console.log('[StripePaymentForm] formId salvo no localStorage:', formId);
+      } else if (paymentIntent) {
+        console.log('PaymentIntent retornado:', paymentIntent);
+        if (paymentIntent.status === 'succeeded') {
+          toast.success(
+            language === 'en' 
+              ? 'Payment successful!' 
+              : 'Pagamento realizado com sucesso!'
+          );
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+          if (formId) {
+            localStorage.setItem('form_id', formId);
+            console.log('[StripePaymentForm] formId salvo no localStorage:', formId);
+          } else {
+            console.warn('[StripePaymentForm] formId não disponível no momento do sucesso! Tentando recuperar do localStorage.');
+          }
+          if (paymentIntent.id) {
+            localStorage.setItem('current_payment_id', paymentIntent.id);
+          }
+          const finalFormId = formId || localStorage.getItem('form_id') || '';
+          onSuccess(paymentIntent.id, finalFormId);
+        } else if (paymentIntent.status === 'processing') {
+          setErrorMessage('O pagamento está sendo processado. Aguarde a confirmação do Stripe.');
+          toast.info('O pagamento está sendo processado. Você será notificado quando for confirmado.');
+        } else if (paymentIntent.status === 'requires_action') {
+          setErrorMessage('O pagamento requer uma ação adicional. Siga as instruções do Stripe.');
+          toast.warning('O pagamento requer uma ação adicional. Siga as instruções do Stripe.');
         } else {
-          console.warn('[StripePaymentForm] formId não disponível no momento do sucesso! Tentando recuperar do localStorage.');
+          setErrorMessage('Status inesperado do pagamento: ' + paymentIntent.status);
+          toast.error('Status inesperado do pagamento: ' + paymentIntent.status);
         }
-        // Store payment_id também
-        if (paymentIntent.id) {
-          localStorage.setItem('current_payment_id', paymentIntent.id);
-        }
-        // Call the success handler with the payment intent ID and formId (ou do localStorage)
-        const finalFormId = formId || localStorage.getItem('form_id') || '';
-        onSuccess(paymentIntent.id, finalFormId);
       } else {
-        console.log('Payment status:', paymentIntent?.status);
-        setIsLoading(false);
-        setErrorMessage(
-          language === 'en' 
-            ? 'Payment is being processed. Please wait...' 
-            : 'O pagamento está sendo processado. Por favor, aguarde...'
-        );
+        setErrorMessage('Não foi possível processar o pagamento. Tente novamente.');
+        toast.error('Não foi possível processar o pagamento. Tente novamente.');
       }
     } catch (error: any) {
       console.error('Error during payment confirmation:', error);
