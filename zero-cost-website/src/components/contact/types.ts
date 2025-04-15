@@ -15,7 +15,7 @@ export interface ContactFormData {
 }
 
 export interface FileData {
-  logo: File[] | null;
+  logo: File | null;
   photos: File[] | null;
 }
 
