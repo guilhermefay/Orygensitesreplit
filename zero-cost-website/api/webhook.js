@@ -3,37 +3,41 @@ const { createClient } = require('@supabase/supabase-js');
 const { buffer } = require('micro');
 
 // Configurar cliente Supabase
-const SUPABASE_URL_FALLBACK = "https://gltluwhobeprwfzzcmzw.supabase.co";
-const SUPABASE_KEY_FALLBACK = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsdGx1d2hvYmVwcndmenpjbXp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEyMjQ3MDUsImV4cCI6MjA1NjgwMDcwNX0.gzJXXUnB5THokP6yEAIHM65IOCNWGcKGAN7iKbWegws";
 
+// --- REMOVER FALLBACKS HARDCODED ---
+// const SUPABASE_URL_FALLBACK = "...";
+// const SUPABASE_KEY_FALLBACK = "...";
+
+// Priorizar a chave de serviço do ambiente
+let supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+let supabaseAnonKey = process.env.SUPABASE_KEY; // Chave Anon pública
 let supabaseUrl = process.env.SUPABASE_URL;
-let supabaseKey = process.env.SUPABASE_KEY; // Usar a chave ANON pública aqui
+
+let supabaseClient;
+
+if (supabaseServiceKey && supabaseUrl) {
+    console.log('[SUPABASE CONFIG] Usando Service Role Key.');
+    supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+} else if (supabaseAnonKey && supabaseUrl) {
+    console.warn('[SUPABASE CONFIG] ATENÇÃO: SUPABASE_SERVICE_KEY não encontrada. Usando SUPABASE_KEY (Anon Key). Permissões podem ser insuficientes para o webhook!');
+    supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+} else {
+    console.error('[SUPABASE FATAL] Variáveis SUPABASE_URL e (SUPABASE_SERVICE_KEY ou SUPABASE_KEY) não configuradas. Webhook não pode funcionar.');
+    // Lançar um erro ou retornar uma resposta de erro impede a função de processar eventos
+    throw new Error('Configuração inválida do Supabase para o webhook.'); 
+}
+
+// --- REMOVER LÓGICA DE FALLBACK ANTIGA ---
+/*
 let usingFallback = false;
-
-if (!supabaseUrl) {
-  console.warn('[SUPABASE FALLBACK] Variável SUPABASE_URL não encontrada, usando fallback.');
-  supabaseUrl = SUPABASE_URL_FALLBACK;
-  usingFallback = true;
-}
-
-if (!supabaseKey) {
-  console.warn('[SUPABASE FALLBACK] Variável SUPABASE_KEY não encontrada, usando fallback (chave ANON).');
-  supabaseKey = SUPABASE_KEY_FALLBACK;
-  usingFallback = true;
-}
-
-// Verificar se temos valores válidos após tentar ler do env e do fallback
-if (!supabaseUrl || !supabaseKey) {
-  console.error('[SUPABASE FATAL] URL ou Chave Supabase inválidas mesmo após fallback. Impossível continuar.');
-  throw new Error('Configuração inválida do Supabase.'); 
-}
-
-if (usingFallback) {
-    console.warn('[SUPABASE FALLBACK] Usando URL/Key Supabase fallback hardcoded!');
-}
-
+if (!supabaseUrl) { ... }
+if (!supabaseKey) { ... }
+if (!supabaseUrl || !supabaseKey) { ... }
+if (usingFallback) { ... }
 const supabaseClient = createClient(supabaseUrl, supabaseKey);
-console.log('[SUPABASE CONFIG] Cliente Supabase criado com sucesso.');
+*/
+
+console.log('[SUPABASE CONFIG] Cliente Supabase inicializado para webhook.');
 
 // Inicializar o Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);

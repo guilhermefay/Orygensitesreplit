@@ -51,9 +51,6 @@ const FormContentContainer: React.FC<FormContentContainerProps> = ({
           onPaymentSuccess={handlePaymentSuccess}
           onBack={handlePaymentBack}
           pricingConfig={pricingConfig}
-          files={undefined}
-          colorPalette={undefined}
-          finalContent={undefined}
           clientSecret={clientSecret}
           currentFormId={currentFormId}
         />
