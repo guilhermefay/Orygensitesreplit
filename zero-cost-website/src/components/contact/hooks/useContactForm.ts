@@ -70,15 +70,16 @@ export const useContactForm = (
         return false;
     }
 
-    // Enviar apenas os dados necessários para a API
+    // Enviar os dados necessários para a API
     const requestBody = {
         plan: formData.selectedPlan,
-        // Passar apenas os campos iniciais para formData
         formData: {
             name: formData.name,
             email: formData.email,
             phone: formData.phone,
-            // Não incluir business, businessDetails aqui
+            // Incluir os campos business e businessDetails que estavam faltando
+            business: formData.business, 
+            businessDetails: formData.businessDetails,
         },
     };
 
