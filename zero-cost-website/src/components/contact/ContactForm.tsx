@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import FormNav from "./FormNav";
 import { useContactForm } from "./hooks/useContactForm";
 import FormContentContainer from "./components/FormContentContainer";
@@ -90,4 +90,4 @@ const ContactForm: React.FC<ContactFormProps> = ({
   );
 };
 
-export default ContactForm;
+export default memo(ContactForm);
