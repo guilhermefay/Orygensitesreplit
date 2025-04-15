@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useFormData } from "./useFormData";
 import { useFormNavigation } from "./useFormNavigation";
 import { useContentGeneration } from "./useContentGeneration"; // Mantido caso precise dos dados
@@ -130,6 +130,19 @@ export const useContactForm = (
     }
 }, [formData, language, setClientSecret, setCurrentFormId]); // Dependências necessárias
 
+  // >>> NOVO useEffect para avançar o passo APÓS receber clientSecret <<<
+  useEffect(() => {
+    console.log(`[useContactForm useEffect] Verificando condições para avançar. Step: ${step}, ClientSecret: ${!!clientSecret}, CurrentFormId: ${!!currentFormId}`);
+    // Avança para o passo 4 SOMENTE SE:
+    // 1. Temos um clientSecret
+    // 2. Temos um currentFormId
+    // 3. AINDA estamos no passo 3 (para evitar avançar se o usuário voltar)
+    if (clientSecret && currentFormId && step === 3) {
+      console.log('[useContactForm useEffect] Condições atendidas! Chamando goToNextStep() para ir para a Etapa 4.');
+      goToNextStep();
+    }
+  }, [clientSecret, currentFormId, step, goToNextStep]); // Dependências corretas
+
   // Function to move to next step - CORRECTED LOGIC
   const nextStep = async (e: React.MouseEvent) => { // <<< Tornar async >>>
     console.log('>>> useContactForm - nextStep INICIADO para step:', step);
@@ -158,8 +171,8 @@ export const useContactForm = (
         const intentCreated = await handleCreatePaymentIntent(); // Tenta criar a intenção
         
         if (intentCreated) {
-            console.log('Intenção de pagamento criada, avançando para o passo 4.');
-            goToNextStep(); // Avança SOMENTE se a intenção foi criada
+            console.log('Intenção de pagamento criada, aguardando useEffect para avançar.'); // <<< MENSAGEM ATUALIZADA >>>
+            // NÃO avançar aqui! O useEffect cuidará disso.
             return true;
         } else {
             console.log('Falha ao criar intenção de pagamento. Não avançando.');

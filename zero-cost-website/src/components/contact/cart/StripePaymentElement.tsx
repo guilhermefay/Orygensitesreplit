@@ -61,9 +61,6 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
     setIsLoading(true);
     setErrorMessage(null);
 
-    // PAUSA PARA DEBUG: Verificar estado antes de chamar Stripe
-    debugger;
-
     try {
       // 1. Confirmar o pagamento SEM redirecionamento automático inicial
       console.log('>>> StripePaymentForm - CHAMANDO stripe.confirmPayment com redirect: if_required');
