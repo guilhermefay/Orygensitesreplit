@@ -60,62 +60,87 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
     setErrorMessage(null);
 
     try {
-      // Confirm the payment
-      console.log('>>> StripePaymentForm - CHAMANDO stripe.confirmPayment');
-      const { error, paymentIntent } = await stripe.confirmPayment({
+      // 1. Confirmar o pagamento SEM redirecionamento automático inicial
+      console.log('>>> StripePaymentForm - CHAMANDO stripe.confirmPayment com redirect: if_required');
+      const confirmResult = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: window.location.origin + '/success', // Fallback in case redirect is required
+          // Definir return_url aqui é um fallback, mas o ideal é tratar no código
+          return_url: `${window.location.origin}/success?formId=${formId}`,
         },
-        redirect: 'if_required',
+        redirect: 'if_required', // Mantém 'if_required', mas trataremos o resultado
       });
 
-      if (error) {
-        console.error('Payment error:', error);
-        setErrorMessage(
-          error.message || 
-          (language === 'en' 
-            ? 'An error occurred during payment processing.' 
-            : 'Ocorreu um erro durante o processamento do pagamento.')
-        );
-        toast.error(error.message || 'Payment failed. Please try again.');
-      } else if (paymentIntent) {
-        console.log('PaymentIntent retornado:', paymentIntent);
+      // Logar o resultado da confirmação
+      console.log('>>> StripePaymentForm - Resultado confirmPayment:', confirmResult);
+
+      // 2. Checar erro na confirmação inicial
+      if (confirmResult.error) {
+        console.error('Erro na confirmação do pagamento:', confirmResult.error);
+        setErrorMessage(confirmResult.error.message || 'Erro ao confirmar pagamento.');
+        toast.error(confirmResult.error.message || 'Erro ao confirmar pagamento.');
+        setIsLoading(false);
+        return; // Parar aqui se houve erro na confirmação
+      }
+
+      // 3. Se não houve erro, buscar o status mais recente do PaymentIntent
+      // (Importante porque o confirmResult pode não ter o status final)
+      console.log('>>> StripePaymentForm - Buscando status atualizado do PaymentIntent:', clientSecret);
+      const { paymentIntent, error: retrieveError } = await stripe.retrievePaymentIntent(clientSecret);
+
+      console.log('>>> StripePaymentForm - Resultado retrievePaymentIntent:', { paymentIntent, retrieveError });
+
+      // 4. Checar erro ao buscar o PaymentIntent
+      if (retrieveError) {
+        console.error('Erro ao buscar PaymentIntent:', retrieveError);
+        setErrorMessage(retrieveError.message || 'Erro ao verificar status do pagamento.');
+        toast.error(retrieveError.message || 'Erro ao verificar status do pagamento.');
+        setIsLoading(false);
+        return;
+      }
+
+      // 5. Tratar o status final do PaymentIntent
+      if (paymentIntent) {
+        console.log('Status final do PaymentIntent:', paymentIntent.status);
         if (paymentIntent.status === 'succeeded') {
-          toast.success(
-            language === 'en' 
-              ? 'Payment successful!' 
-              : 'Pagamento realizado com sucesso!'
-          );
+          toast.success('Pagamento realizado com sucesso!');
           confetti({
-            particleCount: 100,
-            spread: 70,
-            origin: { y: 0.6 }
+            particleCount: 150, // Mais confete!
+            spread: 90,      // Mais espalhado!
+            origin: { y: 0.5 }
           });
+          // Persistir dados importantes
           if (formId) {
             localStorage.setItem('form_id', formId);
-            console.log('[StripePaymentForm] formId salvo no localStorage:', formId);
           } else {
-            console.warn('[StripePaymentForm] formId não disponível no momento do sucesso! Tentando recuperar do localStorage.');
+            console.warn('[StripePaymentForm] formId indisponível no sucesso!');
           }
-          if (paymentIntent.id) {
-            localStorage.setItem('current_payment_id', paymentIntent.id);
-          }
+          localStorage.setItem('current_payment_id', paymentIntent.id);
+          // Chamar o callback de sucesso para navegar
           const finalFormId = formId || localStorage.getItem('form_id') || '';
+          console.log(`>>> StripePaymentForm - CHAMANDO onSuccess com paymentId: ${paymentIntent.id}, formId: ${finalFormId}`);
           onSuccess(paymentIntent.id, finalFormId);
         } else if (paymentIntent.status === 'processing') {
-          setErrorMessage('O pagamento está sendo processado. Aguarde a confirmação do Stripe.');
-          toast.info('O pagamento está sendo processado. Você será notificado quando for confirmado.');
+          setErrorMessage('O pagamento está sendo processado. Aguarde a confirmação.');
+          toast.info('Pagamento em processamento.');
+        } else if (paymentIntent.status === 'requires_payment_method') {
+          setErrorMessage('Falha no pagamento. Verifique os dados do cartão e tente novamente.');
+          toast.error('Falha no pagamento. Verifique os dados do cartão.');
+        } else if (paymentIntent.status === 'requires_confirmation') {
+          setErrorMessage('Pagamento requer confirmação adicional.');
+          toast.info('Pagamento requer confirmação adicional.');
         } else if (paymentIntent.status === 'requires_action') {
-          setErrorMessage('O pagamento requer uma ação adicional. Siga as instruções do Stripe.');
-          toast.warning('O pagamento requer uma ação adicional. Siga as instruções do Stripe.');
+          setErrorMessage('Pagamento requer ação adicional (ex: autenticação 3D Secure). Siga as instruções.');
+          toast.warning('Pagamento requer ação adicional. Siga as instruções.');
+          // Neste caso, o Stripe pode ter redirecionado ou mostrado um modal.
+          // Não há ação extra no código aqui, apenas informar o usuário.
         } else {
-          setErrorMessage('Status inesperado do pagamento: ' + paymentIntent.status);
-          toast.error('Status inesperado do pagamento: ' + paymentIntent.status);
+          setErrorMessage(`Status inesperado: ${paymentIntent.status}`);
+          toast.error(`Status inesperado do pagamento: ${paymentIntent.status}`);
         }
       } else {
-        setErrorMessage('Não foi possível processar o pagamento. Tente novamente.');
-        toast.error('Não foi possível processar o pagamento. Tente novamente.');
+        setErrorMessage('Não foi possível obter o status do pagamento.');
+        toast.error('Não foi possível verificar o status do pagamento.');
       }
     } catch (error: any) {
       console.error('Error during payment confirmation:', error);
