@@ -103,11 +103,11 @@ module.exports = async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
       currency: currency,
-      payment_method_types: ['card'],
+      automatic_payment_methods: { enabled: true },
       metadata: {
         formId: formId, // Adicione o formId nos metadados
         plan: plan,
-        business_name: formData.business,
+        business_name: formData.business || 'N/A',
       },
       description: description,
     });
