@@ -223,18 +223,6 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
                     />
                   </Suspense>
                 )}
-
-                {/* Botão Testar com R$ 1,00 */}
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <Button
-                    onClick={handleTestPayment}
-                    disabled={isTestLoading}
-                    className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition-all flex items-center justify-center"
-                  >
-                    {isTestLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {isTestLoading ? (language === 'en' ? 'Processing...' : 'Processando...') : (language === 'en' ? 'Test with $1.00' : 'Testar com R$ 1,00')}
-                  </Button>
-                </div>
              </div>
              {/* --- Fim Seção de Pagamento Stripe --- */}
           </div>

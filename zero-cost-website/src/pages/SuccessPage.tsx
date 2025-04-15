@@ -82,20 +82,25 @@ const SuccessContent: React.FC = () => {
   useEffect(() => {
     // NÃO EXECUTE ANTES do Stripe estar carregado E os parâmetros iniciais terem sido checados
     if (!stripe || !initialParamsChecked) {
-      console.log('[SuccessPage Process] Aguardando Stripe e/ou leitura inicial de parâmetros...', { hasStripe: !!stripe, paramsChecked: initialParamsChecked });
+      // LOG ADICIONADO: Estado de espera
+      console.log('[SuccessPage Process Wait] Aguardando Stripe e/ou leitura inicial de parâmetros...', { hasStripe: !!stripe, paramsChecked: initialParamsChecked });
       // Se o Stripe carregou mas os parâmetros não, pode ser normal na primeira renderização
-      if (stripe && !initialParamsChecked) console.log('[SuccessPage Process] Stripe carregado, aguardando checagem de parâmetros iniciais.')
+      if (stripe && !initialParamsChecked) console.log('[SuccessPage Process Wait] Stripe carregado, aguardando checagem de parâmetros iniciais.')
       // Se não estiver processando e não tiver Stripe, mostre erro crítico
       if (!isProcessing && !stripe) {
+         console.error('[SuccessPage Process Wait] Erro crítico detectado: Falha ao carregar sistema de pagamento.'); // LOG ADICIONADO
          setFinalStatusMessage('Erro crítico: Falha ao carregar sistema de pagamento.');
          setIsProcessing(false); // Garante que saia do loading
       }
       return;
     }
 
-    console.log('[SuccessPage Process] Iniciando processamento do retorno de pagamento...');
+    // LOG ADICIONADO: Inicio do processamento
+    console.log(`[SuccessPage Process Start] Iniciando processamento. clientSecret: ${!!clientSecret}, formId: ${formId}, redirectStatus: ${redirectStatus}`);
     const processPaymentReturn = async () => {
       // Já começamos com isProcessing = true, não precisa setar de novo aqui
+      // LOG ADICIONADO: Limpando mensagem
+      console.log('[SuccessPage Process Logic] Limpando mensagem final anterior.');
       setFinalStatusMessage(null); // Limpar mensagem anterior
       let paymentSucceeded = false;
       let finalBusinessName = '';
@@ -103,14 +108,17 @@ const SuccessContent: React.FC = () => {
       try {
         // Cenário 1: Retorno de um redirect do Stripe (temos clientSecret)
         if (clientSecret) {
-          console.log('[SuccessPage] Detectado retorno de redirect Stripe. Verificando status...');
+          // LOG ADICIONADO: Cenário 1
+          console.log('[SuccessPage Process Logic] CENÁRIO 1: Detectado retorno de redirect Stripe. Verificando status com clientSecret:', clientSecret ? clientSecret.substring(0,10) + '...' : 'N/A');
           const { paymentIntent, error: retrieveError } = await stripe.retrievePaymentIntent(clientSecret);
 
           if (retrieveError) {
-            console.error('[SuccessPage] Erro ao buscar Payment Intent pós-redirect:', retrieveError);
+            // LOG ADICIONADO: Erro Cenário 1
+            console.error('[SuccessPage Process Logic] CENÁRIO 1 ERRO: Erro ao buscar Payment Intent pós-redirect:', retrieveError);
             setFinalStatusMessage('Erro ao verificar o pagamento. Entre em contato com o suporte.');
           } else if (paymentIntent) {
-            console.log('[SuccessPage] Status do Payment Intent pós-redirect:', paymentIntent.status);
+            // LOG ADICIONADO: Sucesso Cenário 1
+            console.log('[SuccessPage Process Logic] CENÁRIO 1 SUCESSO: Status do Payment Intent pós-redirect:', paymentIntent.status);
             if (paymentIntent.status === 'succeeded') {
               paymentSucceeded = true;
               toast.success('Pagamento confirmado com sucesso!');
@@ -120,14 +128,22 @@ const SuccessContent: React.FC = () => {
               if (paymentIntent.metadata && typeof paymentIntent.metadata.business_name === 'string') {
                  // @ts-ignore - Ignorar erro de tipo aqui também
                  finalBusinessName = paymentIntent.metadata.business_name;
-                 console.log('[SuccessPage] Nome da empresa recuperado dos metadados do Stripe:', finalBusinessName);
+                 console.log('[SuccessPage Process Logic] CENÁRIO 1: Nome da empresa recuperado dos metadados do Stripe:', finalBusinessName);
+              } else {
+                 console.log('[SuccessPage Process Logic] CENÁRIO 1: Metadados do PI ou nome da empresa ausentes.');
               }
             } else if (paymentIntent.status === 'processing') {
+              // LOG ADICIONADO: Status Processando Cenário 1
+              console.log('[SuccessPage Process Logic] CENÁRIO 1: Status ainda processando.');
               setFinalStatusMessage('Seu pagamento ainda está sendo processado. Atualizaremos em breve.');
             } else {
+              // LOG ADICIONADO: Status Falha Cenário 1
+              console.log(`[SuccessPage Process Logic] CENÁRIO 1: Pagamento não concluído. Status: ${paymentIntent.status}`);
               setFinalStatusMessage(`O pagamento não foi concluído (Status: ${paymentIntent.status}). Tente novamente ou contate o suporte.`);
             }
           } else {
+             // LOG ADICIONADO: Falha ao obter PI Cenário 1
+             console.error('[SuccessPage Process Logic] CENÁRIO 1 ERRO: retrievePaymentIntent retornou nulo sem erro explícito.');
              setFinalStatusMessage('Não foi possível verificar o status do pagamento após o retorno.');
           }
         }
@@ -135,7 +151,8 @@ const SuccessContent: React.FC = () => {
         // Este cenário assume que o pagamento já foi confirmado ANTES da navegação
         // e que o webhook (se existir) já atualizou o Supabase.
         else if (formId) {
-           console.log('[SuccessPage] Navegação direta detectada. Assumindo sucesso prévio ou aguardando webhook.');
+           // LOG ADICIONADO: Cenário 2
+           console.log('[SuccessPage Process Logic] CENÁRIO 2: Navegação direta detectada (sem clientSecret). Assumindo sucesso prévio/webhook. formId:', formId);
            // Aqui, consideramos sucesso para UI, mas podemos verificar Supabase se necessário.
            // Para simplificar, vamos assumir sucesso visualmente se formId está presente
            // e confiar no fetchSubmissionDetails para buscar o nome.
@@ -144,29 +161,37 @@ const SuccessContent: React.FC = () => {
 
            // IMPORTANTE: Se não houver webhook, este cenário pode mostrar sucesso
            // mesmo que o pagamento falhe depois. O webhook é crucial.
+           console.log('[SuccessPage Process Logic] CENÁRIO 2: Definido paymentSucceeded = true (visual).');
         }
         // Cenário 3: Fallback pelo nome na URL (raro)
         else if (businessParam) {
-           console.log('[SuccessPage] Usando fallback com nome da empresa na URL.');
+           // LOG ADICIONADO: Cenário 3
+           console.log('[SuccessPage Process Logic] CENÁRIO 3: Usando fallback com nome da empresa na URL:', businessParam);
            paymentSucceeded = true;
            finalBusinessName = decodeURIComponent(businessParam);
            setFinalStatusMessage('Pagamento confirmado (via fallback).');
         }
         // Cenário 4: Sem identificador - erro ou acesso direto inválido
         else {
-           console.warn('[SuccessPage] Nenhum identificador (formId, clientSecret, businessParam) encontrado.');
+           // LOG ADICIONADO: Cenário 4
+           console.warn('[SuccessPage Process Logic] CENÁRIO 4: Nenhum identificador (formId, clientSecret, businessParam) encontrado.');
            setFinalStatusMessage('Não foi possível identificar sua solicitação. Se o pagamento foi feito, entre em contato.');
            paymentSucceeded = false;
         }
 
+        // LOG ADICIONADO: Checando se pagamento sucedeu para buscar detalhes
+        console.log(`[SuccessPage Process Logic] Checando paymentSucceeded: ${paymentSucceeded}`);
         // Se o pagamento sucedeu (direta ou indiretamente), buscar detalhes e mostrar confete
         if (paymentSucceeded) {
+          // LOG ADICIONADO: Pagamento sucedeu, mostrando confete.
+          console.log('[SuccessPage Process Logic] Payment Succeeded! Ativando confete.');
           setShowConfetti(true); // Mostrar confete APENAS se sucesso
           const timer = setTimeout(() => setShowConfetti(false), 8000); // Esconder depois
 
            // Buscar detalhes da submissão no Supabase usando formId (se disponível)
            if (formId) {
-             console.log(`[SuccessPage] Buscando detalhes no Supabase para formId: ${formId}`);
+             // LOG ADICIONADO: Buscando Supabase
+             console.log(`[SuccessPage Process Logic] Buscando detalhes no Supabase para formId: ${formId}`);
              try { // Adicionar try/catch para a busca no Supabase
                 const { data, error } = await supabase
                   .from('form_submissions')
@@ -174,25 +199,39 @@ const SuccessContent: React.FC = () => {
                   .eq('id', formId)
                   .single();
 
-                if (error && !finalBusinessName) { // Só mostrar erro se não pegamos dos metadados
-                  console.error('[SuccessPage] Erro ao buscar dados no Supabase:', error);
-                  // Não sobrescrever mensagem de status se já houver uma
-                  if (!finalStatusMessage) setFinalStatusMessage('Erro ao buscar detalhes da sua solicitação.');
+                if (error) { // Só mostrar erro se não pegamos dos metadados
+                  // LOG ADICIONADO: Erro Supabase
+                  console.error('[SuccessPage Process Logic] Erro ao buscar dados no Supabase:', error);
+                  if (!finalBusinessName) { // Não sobrescrever nome já obtido
+                    // Não sobrescrever mensagem de status se já houver uma
+                    if (!finalStatusMessage) setFinalStatusMessage('Erro ao buscar detalhes da sua solicitação.');
+                  } else {
+                     console.log('[SuccessPage Process Logic] Erro Supabase ignorado pois já temos nome dos metadados.');
+                  }
+                  // Considerar remover confete se falha em buscar detalhes? Depende do requisito.
+                  // setShowConfetti(false);
                 } else if (data?.business) {
+                  // LOG ADICIONADO: Sucesso Supabase
+                  console.log('[SuccessPage Process Logic] Nome da empresa recuperado do Supabase:', data.business);
                   finalBusinessName = data.business;
-                  console.log('[SuccessPage] Nome da empresa recuperado do Supabase:', finalBusinessName);
                 } else if (!finalBusinessName) {
-                  console.warn('[SuccessPage] Nenhum nome de empresa encontrado no Supabase ou metadados.');
+                  // LOG ADICIONADO: Não encontrado no Supabase
+                  console.warn('[SuccessPage Process Logic] Nenhum nome de empresa encontrado no Supabase (e não veio dos metadados).');
                 }
              } catch (supabaseError) {
-                 console.error('[SuccessPage] Exceção ao buscar dados do Supabase:', supabaseError);
+                 // LOG ADICIONADO: Exceção Supabase
+                 console.error('[SuccessPage Process Logic] Exceção ao buscar dados do Supabase:', supabaseError);
                  if (!finalStatusMessage) setFinalStatusMessage('Erro ao carregar detalhes.');
+                 setShowConfetti(false); // Se der exceção, considere falha visual
              }
            } else if (!finalBusinessName) {
-              console.warn('[SuccessPage] formId não disponível para buscar dados do Supabase.');
+              // LOG ADICIONADO: Sem formId para busca Supabase
+              console.warn('[SuccessPage Process Logic] formId não disponível para buscar dados do Supabase (e nome não veio dos metadados).');
            }
 
            // Definir o nome final da empresa
+           // LOG ADICIONADO: Definindo nome da empresa
+           console.log(`[SuccessPage Process Logic] Definindo nome da empresa state para: "${finalBusinessName || 'sua empresa'}"`);
            setBusinessName(finalBusinessName || 'sua empresa'); // Usar fallback
 
            // Limpar timeout do confete na desmontagem
@@ -200,15 +239,20 @@ const SuccessContent: React.FC = () => {
         }
         // Se o pagamento NÃO sucedeu, garantir que confete não apareça
         else {
+            // LOG ADICIONADO: Pagamento não sucedeu, sem confete.
+            console.log('[SuccessPage Process Logic] Payment NÃO Succeeded. Garantindo que confete está desligado.');
             setShowConfetti(false);
         }
 
       } catch (error) {
-        console.error('[SuccessPage] Erro inesperado no processamento:', error);
+        // LOG ADICIONADO: Erro inesperado
+        console.error('[SuccessPage Process Logic] ERRO INESPERADO no bloco try principal:', error);
         setFinalStatusMessage('Ocorreu um erro inesperado ao processar sua solicitação.');
         paymentSucceeded = false; // Garantir que não mostre confete
         setShowConfetti(false);
       } finally {
+        // LOG ADICIONADO: Final do processamento
+        console.log('[SuccessPage Process Logic] Finalizando processamento. Chamando setIsProcessing(false).');
         setIsProcessing(false); // Finalizar o processamento
         console.log('[SuccessPage] Processamento finalizado.');
       }
