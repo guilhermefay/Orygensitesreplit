@@ -1,4 +1,3 @@
-
 import { Crown, Sparkles } from "lucide-react";
 import React from "react";
 import { getFeatureIcon } from "./featureIcons";
@@ -8,6 +7,7 @@ import ContactForm from "@/components/contact/ContactForm";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PricingConfiguration } from "@/lib/config/pricing";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useLocation } from 'react-router-dom';
 
 export interface PlanProps {
   id: string;
@@ -52,6 +52,8 @@ const PlanCard: React.FC<PlanProps> = ({
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const isMobile = useIsMobile();
   const { translate, language } = useLanguage();
+  const location = useLocation();
+  const currentPath = location.pathname;
   
   // Let's create special highlights for the annual plan
   const annualBenefits = id === "annual" ? [
@@ -112,7 +114,28 @@ const PlanCard: React.FC<PlanProps> = ({
   const translatedName = id === "monthly" ? translate('plan.monthly.name') : translate('plan.annual.name');
   const translatedButtonText = id === "monthly" ? translate('plan.monthly.cta') : translate('plan.annual.cta');
   const translatedValueLabel = id === "monthly" ? translate('plan.monthly.value') : translate('plan.annual.value');
-  
+  const translatedMonth = translate('month');
+
+  // Determine price display based on route and plan ID
+  let displayPrice: string;
+  let displayPeriod: string = `/ ${translatedMonth}`;
+  let showTestNote: boolean = false;
+
+  if (currentPath === '/lp') {
+    showTestNote = true;
+    if (id === 'monthly') {
+      displayPrice = "R$ 89,90";
+    } else if (id === 'annual') {
+      displayPrice = "R$ 49,90";
+    } else {
+      // Fallback for other potential plans on /lp? Use prop price.
+      displayPrice = price; 
+    }
+  } else {
+    // Not on /lp, use the price from props
+    displayPrice = price;
+  }
+
   return (
     <div className="relative">
       {id === "annual" && (
@@ -187,7 +210,8 @@ const PlanCard: React.FC<PlanProps> = ({
             {/* Price section */}
             {id === "annual" ? (
               <div className="flex flex-col items-start mb-5">
-                {oldPrice && (
+                {/* Render old price and discount only if NOT on /lp */} 
+                {currentPath !== '/lp' && oldPrice && (
                   <div className="flex items-center">
                     <span className={`${textColor} text-lg line-through opacity-70`}>{oldPrice}</span>
                     <span className="ml-2 bg-[#E7FF36] text-black px-2 py-0.5 rounded-full text-xs font-bold">
@@ -198,18 +222,28 @@ const PlanCard: React.FC<PlanProps> = ({
                 <div className="flex flex-col my-2">
                   <span className={`${textColor} opacity-80 text-sm leading-none`}>{translatedValueLabel}</span>
                   <div className="flex items-baseline">
-                    <span className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-[#E7FF36] to-[#B4FF85] bg-clip-text text-transparent leading-none">{price}</span>
-                    <span className={`${textColor} ml-1 opacity-80`}>/ {translate('month')}</span>
+                    {/* Use determined displayPrice */} 
+                    <span className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-[#E7FF36] to-[#B4FF85] bg-clip-text text-transparent leading-none">{displayPrice}</span>
+                    <span className={`${textColor} ml-1 opacity-80`}>{displayPeriod}</span>
                   </div>
+                  {/* Show test note if applicable */} 
+                  {showTestNote && (
+                    <span className="text-xs text-gray-400 mt-1">(Cobrança de teste: R$ 1,00)</span>
+                  )}
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-start mb-5">
                 <span className={`${textColor} opacity-80 text-sm leading-none`}>{translatedValueLabel}</span>
                 <div className="flex items-baseline my-2">
-                  <span className={`${textColor} text-3xl md:text-4xl font-bold leading-none`}>{price}</span>
-                  <span className={`${textColor} ml-1 opacity-80`}>/ {translate('month')}</span>
+                  {/* Use determined displayPrice */} 
+                  <span className={`${textColor} text-3xl md:text-4xl font-bold leading-none`}>{displayPrice}</span>
+                  <span className={`${textColor} ml-1 opacity-80`}>{displayPeriod}</span>
                 </div>
+                {/* Show test note if applicable */} 
+                {showTestNote && (
+                  <span className="text-xs text-gray-400 mt-1">(Cobrança de teste: R$ 1,00)</span>
+                )}
               </div>
             )}
             
