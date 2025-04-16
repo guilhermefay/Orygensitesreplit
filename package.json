@@ -61,6 +61,7 @@
             "framer-motion": "^12.4.10",
             "input-otp": "^1.2.4",
             "lucide-react": "^0.477.0",
+            "micro": "^10.0.1",
             "next-themes": "^0.3.0",
             "pnpm": "^10.8.1",
             "react": "^18.3.1",
