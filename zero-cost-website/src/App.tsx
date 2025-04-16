@@ -30,6 +30,7 @@ const App = () => (
             <Route path="/payment-success" element={<PaymentSuccessPage />} />
             
             <Route path="/" element={<Index />} />
+            <Route path="/lp" element={<Index />} />
             <Route path="/planos/variant1" element={<PlanPage variant="variant1" />} />
             <Route path="/planos/variant2" element={<PlanPage variant="variant2" />} />
             <Route path="/planos/promotion" element={<PlanPage variant="promotion" />} />
