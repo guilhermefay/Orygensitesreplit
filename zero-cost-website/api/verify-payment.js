@@ -4,7 +4,7 @@ const router = express.Router();
 
 // Handler de teste super simples
 router.post('/', async (req, res) => {
-    console.log('[verify-payment MINIMAL] Rota acessada.');
+    console.log('[verify-payment MINIMAL] Rota acessada.'); // Comentário para forçar novo commit
     
     // Habilitar CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
