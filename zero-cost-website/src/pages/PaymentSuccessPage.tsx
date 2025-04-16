@@ -19,12 +19,18 @@ const PaymentSuccessPage: React.FC = () => {
   const formId = searchParams.get('formId');
   const sessionId = searchParams.get('sessionId');
 
-  const externalFormUrl = 'https://o7pxcg48.forms.app/orygen';
+  // Ler o parâmetro 'source' e definir a URL do formulário condicionalmente
+  const source = searchParams.get('source');
+  const isLpFlow = source === 'lp';
+  const standardUrl = 'https://o7pxcg48.forms.app/orygen'; // URL Padrão
+  const conditionalUrl = 'https://o7pxcg48.forms.app/orygensites'; // URL para source=lp
+  const externalFormUrl = isLpFlow ? conditionalUrl : standardUrl;
 
   useEffect(() => {
     console.log('[PaymentSuccessPage] Montado.');
     console.log('[PaymentSuccessPage] formId da URL:', formId);
     console.log('[PaymentSuccessPage] sessionId da URL:', sessionId);
+    console.log(`[PaymentSuccessPage] Detected source: ${source}, Using form URL: ${externalFormUrl}`); // Log da URL usada
 
     // Trigger confetti
     setShowConfetti(true);

@@ -86,6 +86,12 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
     setIsLoading(true);
     console.log('[handleCheckout] Iniciando checkout para:', { plan: selectedPlan, formId: currentFormId });
 
+    // Adicionar lógica para ler 'source' e definir 'context'
+    const urlParams = new URLSearchParams(window.location.search);
+    const source = urlParams.get('source');
+    const contextToSend = source === 'lp' ? 'lp' : 'default';
+    console.log(`[handleCheckout] Detected source: ${source}, Sending context: ${contextToSend}`);
+
     try {
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
@@ -95,6 +101,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
         body: JSON.stringify({
           plan: selectedPlan,
           formId: currentFormId,
+          context: contextToSend // Adicionar contexto ao corpo da requisição
           // Poderia passar amount e currency se a API não calculasse
           // amount: price.totalPrice,
           // currency: price.currency,
