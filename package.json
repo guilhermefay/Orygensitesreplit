@@ -9,7 +9,7 @@
             "lint": "eslint .",
             "preview": "vite preview",
             "start": "node server.js",
-            "vercel-build": "vite build"
+            "vercel-build": "cd zero-cost-website && vite build"
       },
       "dependencies": {
             "@hookform/resolvers": "^3.9.0",
