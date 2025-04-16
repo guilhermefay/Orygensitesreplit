@@ -4,14 +4,6 @@
     {
       "src": "zero-cost-website/api/*.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "zero-cost-website/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist",
-        "buildCommand": "npm run build"
-      }
     }
   ],
   "routes": [
@@ -44,6 +36,10 @@
       "dest": "/zero-cost-website/api/store-form-data.js"
     },
     {
+      "src": "/api/verify-payment",
+      "dest": "/zero-cost-website/api/verify-payment.js"
+    },
+    {
       "src": "/api/supabase-check",
       "dest": "/zero-cost-website/api/supabase-check.js"
     },
@@ -65,22 +61,24 @@
     },
     {
       "src": "/success",
-      "dest": "/zero-cost-website/dist/index.html"
+      "dest": "/index.html",
+      "status": 200
     },
     {
       "src": "/payment-success",
-      "dest": "/zero-cost-website/dist/index.html"
+      "dest": "/index.html",
+      "status": 200
     },
     {
       "src": "/payment-test",
-      "dest": "/zero-cost-website/public/payment-test.html"
+      "dest": "/public/payment-test.html"
     },
     {
       "handle": "filesystem"
     },
     {
       "src": "/(.*)",
-      "dest": "/zero-cost-website/dist/index.html",
+      "dest": "/index.html",
       "status": 200
     }
   ]
