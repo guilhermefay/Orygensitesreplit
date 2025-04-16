@@ -97,6 +97,7 @@ setupCreatePaymentIntent(app);
 app.use('/api/checkout-direct', require('./api/checkout-direct'));
 app.use('/api/process-payment-success', require('./api/process-payment-success'));
 app.use('/api/store-form-data', require('./api/store-form-data'));
+app.use('/api/verify-payment', require('./api/verify-payment'));
 
 // Rotas antigas, manter para compatibilidade
 app.use('/api/checkout/store-form-data', require('./api/store-form-data')); 
