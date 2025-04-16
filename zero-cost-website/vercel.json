@@ -1,16 +1,33 @@
+{
+  "version": 2,
+  "builds": [
     {
-      "version": 2,
-      "routes": [
-        {
-          "src": "/api/(.*)",
-          "dest": "/api/$1"
-        },
-        {
-          "handle": "filesystem"
-        },
-        {
-          "src": "/(.*)",
-          "dest": "/index.html"
-        }
-      ]
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "installCommand": "npm install",
+        "buildCommand": "npm run vercel-build",
+        "outputDirectory": "dist"
+      }
+    },
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
     }
+  ],
+  "routes": [
+    { "src": "/api/store-form-data", "dest": "/api/store-form-data.js" },
+    { "src": "/api/verify-payment", "dest": "/api/verify-payment.js" },
+    { "src": "/api/webhook", "dest": "/api/webhook.js" },
+    { "src": "/api/create-checkout-session", "dest": "/api/create-checkout-session.js" },
+    { "src": "/api/create-payment-intent", "dest": "/api/create-payment-intent.js" },
+    { "src": "/api/checkout-direct", "dest": "/api/checkout-direct.js" },
+    { "src": "/api/process-payment-success", "dest": "/api/process-payment-success.js" },
+    { "src": "/api/supabase-check", "dest": "/api/supabase-check.js" },
+    { "src": "/api/supabase-test", "dest": "/api/supabase-test.js" },
+    { "src": "/api/hello", "dest": "/api/hello.js" },
+    { "src": "/api/(.*)", "dest": "/api/$1.js" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+} 
