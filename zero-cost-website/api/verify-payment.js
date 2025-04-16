@@ -1,37 +1,10 @@
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
+const Stripe = require('stripe'); // Apenas requerir, não inicializar aqui
 
-// --- Configuração do Stripe ---
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-let stripe;
-if (stripeSecretKey) {
-    stripe = require('stripe')(stripeSecretKey);
-    console.log('[verify-payment] Cliente Stripe inicializado.');
-} else {
-    console.error('[verify-payment FATAL] STRIPE_SECRET_KEY não configurada.');
-    // Considerar lançar erro ou impedir inicialização se Stripe for essencial
-}
-
-// --- Configuração do Supabase (reutilizando lógica de store-form-data) ---
-let supabaseClient;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
-const supabaseAnonKey = process.env.SUPABASE_KEY; // Renomeado para consistência
-const supabaseUrl = process.env.SUPABASE_URL;
-
-if (supabaseServiceKey && supabaseUrl) {
-    console.log('[verify-payment] Usando Supabase Service Role Key.');
-    supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
-} else if (supabaseAnonKey && supabaseUrl) {
-    console.warn('[verify-payment] ATENÇÃO: SUPABASE_SERVICE_KEY não encontrada. Usando SUPABASE_KEY (Anon Key). Permissões de atualização podem ser insuficientes!');
-    supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
-} else {
-    console.error('[verify-payment FATAL] Variáveis SUPABASE_URL e (SUPABASE_SERVICE_KEY ou SUPABASE_KEY) não configuradas.');
-    // Considerar lançar erro ou impedir inicialização
-}
-
-if (supabaseClient) {
-    console.log('[verify-payment] Cliente Supabase inicializado.');
-}
+// --- NÃO inicializar clientes aqui no escopo global ---
+// let stripe;
+// let supabaseClient;
 
 const router = express.Router();
 
@@ -51,15 +24,54 @@ router.post('/', async (req, res) => {
         res.status(statusCode).json({ success: false, error: userMessage, details: errorDetails?.message || errorDetails });
     };
 
-    if (!stripe || !supabaseClient) {
-        return sendErrorResponse(500, 'Stripe ou Supabase não inicializado corretamente.', 'Configuração interna do servidor incompleta.');
-    }
+    // --- INÍCIO: Inicialização dos clientes DENTRO do handler ---
+    let stripe;
+    let supabaseClient;
 
+    try {
+        // Log para verificar se as env vars estão acessíveis AQUI
+        console.log('[verify-payment handler] Verificando env vars:', {
+             STRIPE_SECRET_KEY_PRESENT: !!process.env.STRIPE_SECRET_KEY,
+             SUPABASE_URL_PRESENT: !!process.env.SUPABASE_URL,
+             SUPABASE_SERVICE_KEY_PRESENT: !!process.env.SUPABASE_SERVICE_KEY,
+             SUPABASE_KEY_PRESENT: !!process.env.SUPABASE_KEY
+         });
+
+        // Inicializar Stripe
+        const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+        if (!stripeSecretKey) {
+            throw new Error('STRIPE_SECRET_KEY não está configurada no ambiente.');
+        }
+        stripe = new Stripe(stripeSecretKey);
+        console.log('[verify-payment handler] Cliente Stripe inicializado.');
+
+        // Inicializar Supabase
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+        const supabaseAnonKey = process.env.SUPABASE_KEY;
+
+        if (supabaseServiceKey && supabaseUrl) {
+            console.log('[verify-payment handler] Usando Supabase Service Role Key.');
+            supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+        } else if (supabaseAnonKey && supabaseUrl) {
+            console.warn('[verify-payment handler] ATENÇÃO: SUPABASE_SERVICE_KEY não encontrada. Usando SUPABASE_KEY (Anon Key).');
+            supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+        } else {
+            throw new Error('Variáveis SUPABASE_URL e (SUPABASE_SERVICE_KEY ou SUPABASE_KEY) não configuradas.');
+        }
+        console.log('[verify-payment handler] Cliente Supabase inicializado.');
+
+    } catch (initError) {
+        return sendErrorResponse(500, 'Falha na inicialização de cliente (Stripe/Supabase)', 'Erro interno de configuração do servidor.', initError);
+    }
+    // --- FIM: Inicialização dos clientes DENTRO do handler ---
+
+
+    // --- Lógica da Rota (continua como antes, mas usa stripe/supabaseClient definidos acima) ---
     const { sessionId } = req.body;
 
     if (!sessionId) {
         console.warn('[verify-payment] Tentativa de verificação sem sessionId.');
-        // Não usar sendErrorResponse aqui pois é erro do cliente (400)
         return res.status(400).json({ success: false, error: 'sessionId é obrigatório.' });
     }
 
@@ -75,7 +87,6 @@ router.post('/', async (req, res) => {
             if (stripeError.type === 'StripeInvalidRequestError') {
                 return sendErrorResponse(404, `Sessão Stripe não encontrada: ${sessionId}`, 'Sessão de pagamento não encontrada.', stripeError);
             }
-            // Outro erro do Stripe
             return sendErrorResponse(500, `Erro ao buscar sessão Stripe ${sessionId}`, 'Erro ao comunicar com o sistema de pagamento.', stripeError);
         }
 
@@ -83,57 +94,41 @@ router.post('/', async (req, res) => {
         if (session.status === 'complete' && session.payment_status === 'paid') {
             console.log(`[verify-payment] Pagamento confirmado para sessionId: ${sessionId}`);
 
-            // 3. Obter o formId dos metadados
             const formId = session.metadata?.formId;
             if (!formId) {
-                // Erro LÓGICO grave, mas pagamento está OK. Não retornar 500.
                 console.error(`[verify-payment] ERRO CRÍTICO: formId não encontrado nos metadados da sessão Stripe ${sessionId}.`);
                 return res.status(200).json({ success: true, warning: 'Pagamento confirmado, mas falha ao vincular ao formulário. Metadados ausentes.', formId: null });
             }
 
             console.log(`[verify-payment] formId encontrado nos metadados: ${formId}. Atualizando Supabase...`);
 
-            // 4. Atualizar o status no Supabase
             let updateResult;
             try {
                 updateResult = await supabaseClient
                     .from('form_submissions')
                     .update({ payment_status: 'paid' })
                     .eq('id', formId)
-                    .select('id'); // Selecionar algo para confirmar que funcionou
+                    .select('id');
 
                 if (updateResult.error) {
-                    // Erro específico do Supabase
-                    return sendErrorResponse(500,
-                        `Erro ao atualizar status no Supabase para formId ${formId} (Session: ${sessionId})`,
-                        'Pagamento confirmado, mas falha ao atualizar registro interno.',
-                        updateResult.error
-                    );
+                    return sendErrorResponse(500, `Erro ao atualizar status no Supabase para formId ${formId}`, 'Pagamento confirmado, mas falha ao atualizar registro interno.', updateResult.error);
                 }
-                
-                // Verificar se algum registro foi realmente atualizado (opcional, mas bom)
+
                 if (!updateResult.data || updateResult.data.length === 0) {
-                    console.warn(`[verify-payment] Supabase update para formId ${formId} não encontrou/atualizou registros. O formId existe na tabela 'form_submissions'?`);
-                    // Retornar sucesso, mas com aviso
-                     return res.status(200).json({ success: true, warning: 'Pagamento confirmado, mas registro do formulário não encontrado para atualização.', formId: formId });
+                    console.warn(`[verify-payment] Supabase update para formId ${formId} não encontrou/atualizou registros.`);
+                    return res.status(200).json({ success: true, warning: 'Pagamento confirmado, mas registro do formulário não encontrado para atualização.', formId: formId });
                 }
 
             } catch (supabaseUpdateError) {
-                // Erro inesperado durante a chamada ao Supabase
-                return sendErrorResponse(500,
-                    `Erro inesperado durante atualização do Supabase para formId ${formId}`,
-                    'Erro interno ao atualizar status do pagamento.',
-                    supabaseUpdateError
-                );
+                return sendErrorResponse(500, `Erro inesperado durante atualização do Supabase para formId ${formId}`, 'Erro interno ao atualizar status do pagamento.', supabaseUpdateError);
             }
 
-            console.log(`[verify-payment] Status atualizado com sucesso no Supabase para formId: ${formId}. Registros afetados: ${updateResult.data?.length}`);
+            console.log(`[verify-payment] Status atualizado com sucesso no Supabase para formId: ${formId}.`);
             return res.status(200).json({ success: true, message: 'Pagamento verificado e status atualizado.', formId: formId });
 
         } else {
-            // Pagamento não confirmado / pendente
             console.log(`[verify-payment] Pagamento NÃO confirmado para sessionId: ${sessionId}. Status=${session.status}, PaymentStatus=${session.payment_status}`);
-            return res.status(200).json({ // Usar 200 OK, mas indicar status no corpo
+            return res.status(200).json({
                 success: false,
                 status: 'pending_confirmation',
                 message: 'Pagamento ainda não confirmado ou pendente.',
@@ -143,9 +138,8 @@ router.post('/', async (req, res) => {
         }
 
     } catch (error) {
-        // Erro GERAL inesperado não capturado pelos blocos internos
         return sendErrorResponse(500, 'Erro geral inesperado no handler /api/verify-payment', 'Ocorreu um erro inesperado ao processar sua solicitação.', error);
     }
 });
 
-module.exports = router; // Exportar o router para ser usado em server.js 
+module.exports = router; 
