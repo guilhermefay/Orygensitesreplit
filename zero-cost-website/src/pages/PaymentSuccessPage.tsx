@@ -18,8 +18,14 @@ const PaymentSuccessPage: React.FC = () => {
 
   const formId = searchParams.get('formId');
   const sessionId = searchParams.get('sessionId');
+  const source = searchParams.get('source'); // <<< Ler o parâmetro source
 
-  const externalFormUrl = 'https://o7pxcg48.forms.app/orygen';
+  console.log('[PaymentSuccessPage] Source parameter:', source);
+
+  // Definir a URL do formulário final condicionalmente
+  const defaultFormUrl = 'https://o7pxcg48.forms.app/orygen';
+  const lpFormUrl = 'https://o7pxcg48.forms.app/orygensites';
+  const externalFormUrl = source === 'lp' ? lpFormUrl : defaultFormUrl;
 
   useEffect(() => {
     console.log('[PaymentSuccessPage] Montado.');
