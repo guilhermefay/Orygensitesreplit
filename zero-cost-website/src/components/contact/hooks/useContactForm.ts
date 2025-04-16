@@ -58,34 +58,37 @@ export const useContactForm = (
   const [apiError, setApiError] = useState<string | null>(null);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
 
-  // Função para criar Payment Intent (simplificada)
-  const handleCreatePaymentIntent = useCallback(async () => {
-    console.log('[useContactForm] Tentando criar Payment Intent (simplificado)...');
-    setIsCreatingIntent(true);
+  // Renomear função e ajustar lógica
+  const handleInitiateSubmission = useCallback(async () => {
+    console.log('[useContactForm] Iniciando submissão e salvando dados iniciais...');
+    setIsCreatingIntent(true); // Usar este estado para loading
     setApiError(null);
+    // setClientSecret(null); // Limpar estado antigo
+    // setCurrentFormId(null);
 
-    // Validar apenas os campos iniciais
+    // Validar campos iniciais
     if (!validateName(formData.name) || !validateEmail(formData.email) || !validatePhone(formData.phone) || !formData.selectedPlan) {
         toast.error(language === 'en' ? "Please fill in your name, email, and phone correctly." : "Por favor, preencha seu nome, email e telefone corretamente.");
         setIsCreatingIntent(false);
-        return false;
+        return { success: false, formId: null }; // Retornar objeto
     }
 
-    // Enviar os dados necessários para a API
+    // Enviar os dados necessários para a API /api/store-form-data
     const requestBody = {
         plan: formData.selectedPlan,
-        formData: {
+        formData: { // Aninhar formData como a API espera
             name: formData.name,
             email: formData.email,
             phone: formData.phone,
-            // Incluir os campos business e businessDetails que estavam faltando
-            business: formData.business, 
+            // Adicionar outros campos se a API os esperar
+            business: formData.business,
             businessDetails: formData.businessDetails,
         },
     };
 
     try {
-        const response = await fetch('/api/create-payment-intent', {
+        // Mudar URL da API
+        const response = await fetch('/api/store-form-data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -94,83 +97,77 @@ export const useContactForm = (
         });
 
         if (!response.ok) {
-            // ... (tratamento de erro da API permanece o mesmo)
-            let errorText = 'Failed to create payment intent';
+            let errorText = 'Failed to store initial data';
             try {
                 const errorData = await response.json(); 
                 errorText = errorData.error || JSON.stringify(errorData);
             } catch (jsonError) {
-                try {
-                    errorText = await response.text();
-                } catch (textError) {
-                    errorText = `Failed to create payment intent. Status: ${response.status}`;
-                }
+                 errorText = `Failed to store initial data. Status: ${response.status}`;
             }
-            console.error('[useContactForm] Erro da API create-payment-intent:', errorText);
+            console.error('[useContactForm] Erro da API store-form-data:', errorText);
             throw new Error(errorText);
         }
 
         const data = await response.json();
-        console.log('[useContactForm] Payment Intent criado:', data);
-        if (data.clientSecret && data.formId) {
-            setClientSecret(data.clientSecret);
+        console.log('[useContactForm] Dados iniciais salvos:', data);
+        
+        // Verificar se retornou sucesso e o formId
+        if (data.success && data.formId) {
+            // setClientSecret(null); // Não precisamos mais de clientSecret
             setCurrentFormId(data.formId); // Armazena o formId retornado pela API
             setIsCreatingIntent(false);
-            return true; // Sucesso
+            return { success: true, formId: data.formId }; // Sucesso, retornar formId
         } else {
-             throw new Error(language === 'en' ? "API did not return clientSecret or formId" : "API não retornou clientSecret ou formId");
+             throw new Error(language === 'en' ? "API did not return success or formId" : "API não retornou sucesso ou formId");
         }
 
     } catch (err: any) {
-        console.error('[useContactForm] Erro ao criar payment intent:', err);
-        setApiError(err.message || 'Failed to create payment intent');
+        console.error('[useContactForm] Erro ao salvar dados iniciais:', err);
+        setApiError(err.message || 'Failed to save initial data');
         toast.error(
-            (language === 'en' ? 'Failed to initialize payment: ' : 'Falha ao inicializar pagamento: ') + 
+            (language === 'en' ? 'Failed to save information: ' : 'Falha ao salvar informações: ') + 
             (err.message || (language === 'en' ? 'Please try again.' : 'Por favor, tente novamente.'))
         );
         setIsCreatingIntent(false);
-        return false; // Falha
+        return { success: false, formId: null }; // Falha
     } finally {
-      if (isCreatingIntent) { // Garantir que o loading pare
-           setIsCreatingIntent(false);
-      }
+      // Remover bloco if(isCreatingIntent) desnecessário
     }
-  // Atualizar dependências se necessário (formData simplificado)
-}, [formData.name, formData.email, formData.phone, formData.selectedPlan, language, setClientSecret, setCurrentFormId]);
+  }, [formData, language, setCurrentFormId]); // Dependências ajustadas
 
-  // useEffect para avançar para o passo 2 (Pagamento) após criar intent
+  // useEffect para avançar para o passo 2 (Pagamento) APÓS SALVAR DADOS
   useEffect(() => {
-    console.log(`[useContactForm useEffect] Verificando condições para avançar. Step: ${step}, ClientSecret: ${!!clientSecret}, CurrentFormId: ${!!currentFormId}`);
+    console.log(`[useContactForm useEffect] Verificando condições para avançar. Step: ${step}, CurrentFormId: ${!!currentFormId}`);
     // Avança para o passo 2 SOMENTE SE:
-    // 1. Temos clientSecret e currentFormId
+    // 1. Temos currentFormId (significa que os dados foram salvos)
     // 2. AINDA estamos no passo 1
-    if (clientSecret && currentFormId && step === 1) { // <<< MUDAR step para 1 >>>
+    // REMOVER clientSecret da condição
+    if (currentFormId && step === 1) { 
       console.log('[useContactForm useEffect] Condições atendidas! Chamando goToNextStep() para ir para a Etapa 2 (Pagamento).');
       goToNextStep();
     }
-  }, [clientSecret, currentFormId, step, goToNextStep]);
+  }, [currentFormId, step, goToNextStep]); // Dependência de clientSecret removida
 
-  // Função nextStep simplificada
+  // Função nextStep ajustada
   const nextStep = async (e: React.MouseEvent) => {
     console.log('>>> useContactForm - nextStep INICIADO para step:', step);
     e.preventDefault();
 
     if (step === 1) { // Saindo do passo 1 (Informações)
-      if (isCreatingIntent) return false;
+      if (isCreatingIntent) return false; // Evitar cliques múltiplos
 
-      // Validação já ocorre dentro de handleCreatePaymentIntent
-      const intentCreated = await handleCreatePaymentIntent();
+      // Chama a função para salvar os dados iniciais
+      const result = await handleInitiateSubmission();
 
-      if (intentCreated) {
-        console.log('Intenção de pagamento criada, aguardando useEffect para avançar para Etapa 2.');
+      if (result.success && result.formId) {
+        console.log('Dados iniciais salvos com formId:', result.formId, ', aguardando useEffect para avançar para Etapa 2.');
         // Não avançar aqui, o useEffect cuida disso
         return true;
       } else {
-        console.log('Falha ao criar intenção de pagamento. Não avançando.');
+        console.log('Falha ao salvar dados iniciais. Não avançando.');
         return false;
       }
     }
-    // Não há mais passos para avançar a partir daqui neste formulário inicial
     else {
         console.log(`useContactForm: Tentativa de avançar do passo ${step}, mas já estamos no último passo ou em estado inesperado.`);
         return false;
@@ -181,16 +178,12 @@ export const useContactForm = (
   const prevStep = (e: React.MouseEvent) => {
     e.preventDefault();
     if (step === 2) {
-        // Opcional: limpar clientSecret/formId ao voltar?
-        // setClientSecret(null);
-        // setCurrentFormId(null);
+        // Limpar formId ao voltar? Importante se o usuário mudar dados e tentar de novo.
+        setCurrentFormId(null); 
         return goToPrevStep();
     }
     return false; // Não pode voltar do passo 1
   };
-
-  // Remover handleSubmit, pois não há submissão final aqui
-  // const handleSubmit = ...
 
   // Função reset simplificada
   const resetForm = () => {
@@ -209,11 +202,13 @@ export const useContactForm = (
         email: formData.email,
         phone: formData.phone,
         selectedPlan: formData.selectedPlan,
+        // Incluir business e businessDetails se ainda forem usados no formData
+        business: formData.business, 
+        businessDetails: formData.businessDetails,
     },
-    // Remover files, colorPalette, etc.
-    isSubmitting: isCreatingIntent, // Usar isCreatingIntent como indicador de submissão/loading
+    isSubmitting: isCreatingIntent,
     step,
-    clientSecret,
+    // clientSecret, // REMOVER
     currentFormId,
     isCreatingIntent,
     apiError,

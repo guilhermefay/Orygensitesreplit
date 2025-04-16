@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -58,20 +57,7 @@ const FormNav: React.FC<FormNavProps> = ({
           {translate('form.next')}
           <ArrowRight className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} transition-transform group-hover:translate-x-1`} />
         </button>
-      ) : (
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className={`group px-3 py-1.5 md:px-5 md:py-2.5 bg-black text-white font-bold rounded-lg shadow-lg transition-all duration-300 hover:bg-gray-800 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black ${isMobile ? 'text-xs' : 'text-sm'} flex items-center gap-2 ${
-            isSubmitting ? "opacity-70 cursor-not-allowed" : ""
-          }`}
-        >
-          {isSubmitting 
-            ? translate('form.sending')
-            : translate('form.requestWebsite')}
-          {!isSubmitting && <ArrowRight className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} transition-transform group-hover:translate-x-1`} />}
-        </button>
-      )}
+      ) : null }
     </div>
   );
 };

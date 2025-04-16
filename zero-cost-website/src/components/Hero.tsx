@@ -102,6 +102,10 @@ const Hero = () => {
             </p>
             
             <div ref={ctaRef} className="flex flex-col sm:flex-row gap-4 reveal justify-center pt-2">
+              <a href="#planos" className="inline-flex items-center justify-center px-8 py-4 bg-highlight text-black font-bold text-lg rounded-md transition-all duration-300 transform hover:translate-y-[-2px] shadow-[0_4px_20px_rgba(231,255,54,0.3)] hover:shadow-[0_6px_25px_rgba(231,255,54,0.5)] focus:outline-none">
+                {translate('hero.button.primary')}
+              </a>
+              
               <a href="#oferta" className="inline-flex items-center justify-center px-8 py-4 bg-transparent border border-gray-700 text-white font-medium rounded-md hover:bg-white/5 transition-colors duration-300">
                 {translate('hero.button.secondary')}
                 <svg className="ml-2 w-5 h-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
