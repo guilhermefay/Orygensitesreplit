@@ -2,6 +2,10 @@
 const { createClient } = require('@supabase/supabase-js');
 const { v4: uuidv4 } = require('uuid'); // Importar uuid
 
+// Log para depurar variáveis de ambiente da API
+console.log('[DEBUG API] SUPABASE_URL:', process.env.SUPABASE_URL);
+console.log('[DEBUG API] SUPABASE_SERVICE_KEY:', process.env.SUPABASE_SERVICE_KEY ? '*** Presente ***' : '!!! AUSENTE !!!');
+
 // --- REMOVER ARMAZENAMENTO TEMPORÁRIO ---
 // const { formDataStorage, saveStorage } = require('./shared-storage');
 

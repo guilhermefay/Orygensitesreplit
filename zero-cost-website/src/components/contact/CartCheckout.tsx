@@ -7,6 +7,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 
+// Log para depurar a chave pública do Stripe
+console.log('[DEBUG] VITE_STRIPE_PUBLIC_KEY:', import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+
 // Chave pública do Stripe (deve vir das variáveis de ambiente)
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
