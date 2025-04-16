@@ -3,7 +3,7 @@ const Stripe = require('stripe');
 
 // Exportar diretamente a função handler no formato Vercel
 module.exports = async (req, res) => {
-    console.log('[verify-payment Vercel Handler] Rota acessada.');
+    console.log('[verify-payment Vercel Handler] Rota acessada.'); // Outro comentário para forçar sync
 
     // Habilitar CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
