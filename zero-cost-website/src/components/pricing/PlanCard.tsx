@@ -55,6 +55,12 @@ const PlanCard: React.FC<PlanProps> = ({
   const location = useLocation();
   const currentPath = location.pathname;
   
+  // --- START: Hide monthly card on /premium route ---
+  if (currentPath === '/premium' && id === 'monthly') {
+    return null; // Não renderiza o card mensal em /premium
+  }
+  // --- END: Hide monthly card ---
+  
   // Let's create special highlights for the annual plan
   const annualBenefits = id === "annual" ? [
     translate('feature.freeCustomDomain'),
@@ -128,11 +134,20 @@ const PlanCard: React.FC<PlanProps> = ({
     } else if (id === 'annual') {
       displayPrice = "R$ 49,90";
     } else {
-      // Fallback for other potential plans on /lp? Use prop price.
       displayPrice = price; 
     }
+  } else if (currentPath === '/premium') {
+     showTestNote = false; // Não mostrar nota de teste em /premium
+     if (id === 'annual') {
+        displayPrice = "R$ 99,00"; 
+     } else {
+        // O card mensal já foi tratado acima (retorna null)
+        // Definir um fallback caso outro id apareça aqui?
+        displayPrice = price; // Ou talvez string vazia?
+     }
   } else {
-    // Not on /lp, use the price from props
+    // Default route (not /lp or /premium)
+    showTestNote = false;
     displayPrice = price;
   }
 
