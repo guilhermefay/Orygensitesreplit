@@ -26,84 +26,103 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  if (req.method === 'POST') {
-    try {
-      const { plan = 'monthly', amount = 4990, currency = 'brl', formId: providedFormId } = req.body; // Valores default
-
-      // Garante que temos um formId
-      const formId = providedFormId || uuidv4();
-
-      // Definir descrição e valor com base no plano
-      let description = 'Orygen Sites - Plano Mensal';
-      // let unitAmount = 4990; // R$ 49,90 em centavos
-      // if (plan === 'annual') {
-      //   description = 'Orygen Sites - Plano Anual';
-      //   unitAmount = 59880; // R$ 598,80 em centavos (ajuste se necessário)
-      // }
-      
-      // --- VALOR FIXO PARA TESTE --- 
-      let unitAmount = 100; // R$ 1,00 em centavos - APENAS PARA TESTE
-      description = `TESTE - ${plan === 'annual' ? 'Plano Anual' : 'Plano Mensal'} (R$ 1,00)`;
-      // --- FIM VALOR FIXO --- 
-
-      // TODO: Adicionar lógica para buscar o preço do Stripe Product/Price ID se preferir
-
-      const baseUrl = getBaseUrl(req);
-      const successUrl = `${baseUrl}/payment-success?sessionId={CHECKOUT_SESSION_ID}&formId=${formId}`;
-      const cancelUrl = `${baseUrl}/#contact`; // Volta para a seção de contato
-
-      // Criar sessão de Checkout
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card', 'boleto'], // Adicione 'pix' se ativado
-        line_items: [
-          {
-            price_data: {
-              currency: currency.toLowerCase(),
-              product_data: {
-                name: description,
-                // Você pode adicionar mais detalhes do produto aqui se quiser
-                // images: ['url_da_imagem_do_produto'],
-              },
-              unit_amount: unitAmount,
-            },
-            quantity: 1,
-          },
-        ],
-        mode: 'payment',
-        success_url: successUrl,
-        cancel_url: cancelUrl,
-        metadata: {
-          plan: plan,
-          formId: formId, // Passa o formId para o webhook
-        },
-        // Configurações específicas do Brasil
-        locale: 'pt-BR',
-        billing_address_collection: 'required', // Coleta endereço de cobrança
-        // Configuração para Boleto (opcional, ajuste os dias)
-        payment_method_options: {
-          boleto: {
-            expires_after_days: 3,
-          },
-        },
-        // Permite códigos promocionais se configurado no Stripe
-        allow_promotion_codes: true,
-        // Tenta preencher o email do cliente se ele já comprou antes
-        // customer_email: req.body.email || undefined, // Passe o email do form se tiver
-      });
-
-      console.log(`[Checkout Session] Criada sessão ${session.id} para formId ${formId}`);
-
-      // Retorna o ID da sessão para redirecionamento no frontend
-      // Alternativamente, poderia retornar session.url, mas retornar o ID é mais flexível
-      // para usar com stripe.redirectToCheckout(sessionId) no frontend.
-      res.status(200).json({ sessionId: session.id });
-
-    } catch (error) {
-      console.error('[Create Checkout Session] Erro:', error);
-      res.status(500).json({ error: { message: error.message } });
-    }
-  } else {
+  if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
-    res.status(405).end('Method Not Allowed');
+    return res.status(405).end('Method Not Allowed');
+  }
+
+  try {
+    const { plan = 'monthly', formId: providedFormId, context = 'default' } = req.body;
+    const formId = providedFormId || uuidv4(); 
+
+    let unitAmount;
+    let currency;
+    let description;
+    let finalSuccessUrl;
+    const baseUrl = getBaseUrl(req);
+    let baseSuccessUrl = `${baseUrl}/payment-success?sessionId={CHECKOUT_SESSION_ID}&formId=${formId}`;
+    const cancelUrl = `${baseUrl}/#contact`; 
+
+    console.log(`[Checkout Session] Received context: ${context}, plan: ${plan}, formId: ${formId}`);
+
+    // Determinar Preço, Moeda e Descrição com base no contexto e plano
+    switch (context) {
+      case 'lp':
+        currency = 'brl';
+        unitAmount = 100; // R$ 1,00 TESTE
+        description = `TESTE LP - ${plan === 'annual' ? 'Plano Anual' : 'Plano Mensal'} (R$ 1,00)`;
+        finalSuccessUrl = `${baseSuccessUrl}&source=lp`; // Adiciona source=lp
+        break;
+      case 'variant2':
+        currency = 'usd';
+        if (plan === 'monthly') {
+          unitAmount = 5000; // $50.00 USD
+          description = 'Orygen Sites - Monthly Plan (USD)';
+        } else if (plan === 'annual') {
+          unitAmount = 23880; // $238.80 USD
+          description = 'Orygen Sites - Annual Plan (USD)';
+        } else {
+          throw new Error(`Plano inválido '${plan}' para o contexto '${context}'.`);
+        }
+        finalSuccessUrl = baseSuccessUrl; // URL padrão
+        break;
+      case 'default':
+      default: // Trata 'default' e qualquer outro caso como BRL padrão
+        currency = 'brl';
+        if (plan === 'monthly') {
+          unitAmount = 4990; // R$ 49,90
+          description = 'Orygen Sites - Plano Mensal';
+        } else if (plan === 'annual') {
+          unitAmount = 59880; // R$ 598,80
+          description = 'Orygen Sites - Plano Anual';
+        } else {
+           throw new Error(`Plano inválido '${plan}' para o contexto '${context}'.`);
+        }
+        finalSuccessUrl = baseSuccessUrl; // URL padrão
+        break;
+    }
+    
+    console.log(`[Checkout Session] Calculated Price: ${unitAmount} ${currency.toUpperCase()}, Success URL: ${finalSuccessUrl}`);
+
+    // Criar sessão de Checkout
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card', 'boleto'], // Adicionar 'pix' se houver
+      line_items: [
+        {
+          price_data: {
+            currency: currency.toLowerCase(),
+            product_data: {
+              name: description,
+            },
+            unit_amount: unitAmount,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: finalSuccessUrl, // <<< Usar a URL final determinada
+      cancel_url: cancelUrl,
+      metadata: {
+        plan: plan,
+        formId: formId,
+        context: context // <<< Adicionar contexto aos metadados também pode ser útil
+      },
+      locale: 'pt-BR',
+      billing_address_collection: 'required',
+      payment_method_options: {
+        boleto: {
+          expires_after_days: 3,
+        },
+      },
+      allow_promotion_codes: true,
+      // customer_email: req.body.email || undefined,
+    });
+
+    console.log(`[Checkout Session] Criada sessão ${session.id} para formId ${formId} com contexto ${context}`);
+    res.status(200).json({ sessionId: session.id });
+
+  } catch (error) {
+    console.error('[Create Checkout Session] Erro:', error);
+    res.status(500).json({ error: { message: error.message } });
   }
 }; 

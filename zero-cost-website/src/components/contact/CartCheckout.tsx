@@ -84,7 +84,20 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
     }
 
     setIsLoading(true);
-    console.log('[handleCheckout] Iniciando checkout para:', { plan: selectedPlan, formId: currentFormId });
+    
+    // --- Determinar o contexto --- 
+    let contextToSend: 'default' | 'variant2' | 'lp' = 'default';
+    const currentPath = window.location.pathname;
+    const searchParams = new URLSearchParams(window.location.search);
+
+    if (currentPath === '/lp') {
+        contextToSend = 'lp';
+    } else if (searchParams.get('variant') === 'variant2') {
+        contextToSend = 'variant2';
+    } // else: continua 'default'
+
+    console.log('[handleCheckout] Contexto determinado:', contextToSend);
+    console.log('[handleCheckout] Iniciando checkout para:', { plan: selectedPlan, formId: currentFormId, context: contextToSend });
 
     try {
       const response = await fetch('/api/create-checkout-session', {
@@ -95,7 +108,7 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
         body: JSON.stringify({
           plan: selectedPlan,
           formId: currentFormId,
-          // Poderia passar amount e currency se a API não calculasse
+          context: contextToSend,
           // amount: price.totalPrice,
           // currency: price.currency,
         }),
