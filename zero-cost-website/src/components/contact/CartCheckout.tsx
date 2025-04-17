@@ -86,12 +86,14 @@ const CartCheckout: React.FC<CartCheckoutProps> = ({
     setIsLoading(true);
     
     // --- Determinar o contexto --- 
-    let contextToSend: 'default' | 'variant2' | 'lp' = 'default';
+    let contextToSend: 'default' | 'variant2' | 'lp' | 'premium' = 'default';
     const currentPath = window.location.pathname;
     const searchParams = new URLSearchParams(window.location.search);
 
     if (currentPath === '/lp') {
         contextToSend = 'lp';
+    } else if (currentPath === '/premium') {
+        contextToSend = 'premium';
     } else if (searchParams.get('variant') === 'variant2') {
         contextToSend = 'variant2';
     } // else: continua 'default'
