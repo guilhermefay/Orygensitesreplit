@@ -51,8 +51,23 @@ module.exports = async (req, res) => {
         currency = 'brl';
         unitAmount = 100; // R$ 1,00 TESTE
         description = `TESTE LP - ${plan === 'annual' ? 'Plano Anual' : 'Plano Mensal'} (R$ 1,00)`;
-        finalSuccessUrl = `${baseSuccessUrl}&source=lp`; // Adiciona source=lp
+        finalSuccessUrl = `${baseSuccessUrl}&source=lp`;
         break;
+
+      // --- NOVO CASE PARA PREMIUM --- 
+      case 'premium':
+        if (plan !== 'annual') {
+          console.warn(`[Checkout Session] Tentativa de checkout premium com plano inválido: ${plan}`);
+          // Retorna erro 400 se o plano não for anual para o contexto premium
+          return res.status(400).json({ error: { message: 'Plano inválido para o contexto premium. Apenas anual é permitido.' } });
+        }
+        currency = 'brl';
+        unitAmount = 118800; // R$ 1188,00
+        description = 'Orygen Sites - Premium Anual (BRL)';
+        finalSuccessUrl = `${baseSuccessUrl}&source=premium`; // Adiciona source=premium
+        break;
+      // --- FIM CASE PREMIUM --- 
+        
       case 'variant2':
         currency = 'usd';
         if (plan === 'monthly') {
@@ -62,12 +77,14 @@ module.exports = async (req, res) => {
           unitAmount = 23880; // $238.80 USD
           description = 'Orygen Sites - Annual Plan (USD)';
         } else {
+          // Lançar erro aqui é ok, pois é erro de programação se chegar
           throw new Error(`Plano inválido '${plan}' para o contexto '${context}'.`);
         }
-        finalSuccessUrl = baseSuccessUrl; // URL padrão
+        finalSuccessUrl = baseSuccessUrl;
         break;
+        
       case 'default':
-      default: // Trata 'default' e qualquer outro caso como BRL padrão
+      default:
         currency = 'brl';
         if (plan === 'monthly') {
           unitAmount = 4990; // R$ 49,90
@@ -76,12 +93,19 @@ module.exports = async (req, res) => {
           unitAmount = 59880; // R$ 598,80
           description = 'Orygen Sites - Plano Anual';
         } else {
+           // Lançar erro aqui é ok
            throw new Error(`Plano inválido '${plan}' para o contexto '${context}'.`);
         }
-        finalSuccessUrl = baseSuccessUrl; // URL padrão
+        finalSuccessUrl = baseSuccessUrl;
         break;
     }
     
+    // Verifica se unitAmount foi definido (caso um contexto inválido seja passado, embora improvável)
+    if (typeof unitAmount === 'undefined') {
+       console.error(`[Checkout Session] Contexto '${context}' ou plano '${plan}' resultou em unitAmount indefinido.`);
+       return res.status(400).json({ error: { message: 'Contexto ou plano inválido.' } });
+    }
+
     console.log(`[Checkout Session] Calculated Price: ${unitAmount} ${currency.toUpperCase()}, Success URL: ${finalSuccessUrl}`);
 
     // Criar sessão de Checkout
@@ -123,6 +147,7 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('[Create Checkout Session] Erro:', error);
-    res.status(500).json({ error: { message: error.message } });
+    // Garantir que mesmo os erros lançados manualmente resultem em JSON
+    res.status(500).json({ error: { message: error.message || 'Erro interno do servidor.' } });
   }
 }; 
